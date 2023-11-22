@@ -1,0 +1,42 @@
+---
+title: "Untitled"
+author: "Clément"
+date: "2023-11-22"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+data_pollution <- read.csv("~/Master 2 MAS/Traitement du signal et des images/USA_Pollution/data_pollution.csv", sep=";")
+
+data_pollution$Date.Local <- as.Date(data_pollution$Date.Local)
+```
+
+
+```{r}
+data_2000 <- subset(data_pollution, format(Date.Local, "%Y") == "2000")
+
+ggplot(data_2000, aes(x = Date.Local, y = NO2.AQI, color = City)) +
+  geom_line(size = 1) +
+  labs(title = "Concentration de NO2 en 2021",
+       x = "Date",
+       y = "NO2.AQI",
+       color = "City") +
+  theme_minimal()
+```
+
+```{r}
+data_phoenix <- subset(data_pollution, City == "Phoenix")
+
+ggplot(data_phoenix, aes(x = as.Date(format(Date.Local, "%Y-%m-%d")), y = NO2.AQI, color = format(Date.Local, "%Y"))) +
+  geom_line(size = 1) +
+  labs(title = "Concentration de NO2 par année (échelle annuelle)",
+       x = "Date",
+       y = "NO2.AQI",
+       color = "Année") +
+  theme_minimal()
+```
+
