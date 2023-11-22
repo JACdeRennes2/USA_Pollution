@@ -1,0 +1,37 @@
+---
+title: "Préparation des données"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+
+pollution_us_2000_2016 <- read.csv("../pollution_us_2000_2016.csv")
+pollution_us_2000_2016 <- pollution_us_2000_2016 %>% select(c(City, Date.Local, NO2.AQI, O3.AQI, SO2.AQI, CO.AQI))
+```
+
+```{r}
+pollution_us_2000_2016 <- na.omit(pollution_us_2000_2016)
+```
+
+```{r}
+villes <- c("Phoenix", "Scottsdale", "Tucson", "Concord", "Bethel Island",
+            "San Pablo", "Pittsburg", "Calexico", "Bakersfield", "Burbank",
+            "Los Angeles", "Long Beach", "Hawthorne", "Costa Mesa", "Rubidoux",
+            "Not in a city", "Arden-Arcade", "Victorville", "Chula Vista", "San Diego",
+            "San Francisco", "Capitan", "Lompoc", "Goleta", "Vandenberg Air Force Base")
+data.frame(unique(pollution_us_2000_2016$City))[which(unique(pollution_us_2000_2016$City) %in% villes),1]
+```
+
+```{r}
+pollution_us_2000_2016 <- pollution_us_2000_2016[which(pollution_us_2000_2016$City %in% villes),]
+```
+
+```{r}
+unique(pollution_us_2000_2016$City)
+```
+
+```{r}
+write_csv2(pollution_us_2000_2016, "data_pollution.csv")
+```
+
