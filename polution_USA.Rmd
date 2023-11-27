@@ -1,20 +1,22 @@
 ---
-title: "Untitled"
-author: "Clément"
+title: "Pollution aux USA"
+author: "Clément PEREON et Jules AVIGNON"
 date: "2023-11-22"
 output: html_document
 ---
 
 ```{r}
+library(tidyverse)
 library(ggplot2)
 ```
 
 ```{r}
-data_pollution <- read.csv("~/Master 2 MAS/Traitement du signal et des images/USA_Pollution/data_pollution.csv", sep=";")
+data_pollution <- read.csv("data_pollution.csv", sep=";")
 
 data_pollution$Date.Local <- as.Date(data_pollution$Date.Local)
 ```
 
+# Description et représentations informatives des données
 
 ```{r}
 data_2000 <- subset(data_pollution, format(Date.Local, "%Y") == "2000")
@@ -39,4 +41,90 @@ ggplot(data_phoenix, aes(x = as.Date(format(Date.Local, "%Y-%m-%d")), y = NO2.AQ
        color = "Année") +
   theme_minimal()
 ```
+
+# Lissage des données
+
+```{r}
+smoothed_data <- data_pollution %>%
+  group_by(City) %>%
+  arrange(Date.Local) %>%
+  mutate(smoothed_NO2 = smooth.spline(NO2.AQI)$y)
+
+ggplot(smoothed_data, aes(x = Date.Local, y = smoothed_NO2, color = City)) +
+  geom_line() +
+  labs(title = "Lissage des données de NO2.AQI par ville",
+       x = "Date",
+       y = "NO2.AQI")
+```
+
+# Dérivées
+
+```{r}
+data_pollution <- data_pollution %>%
+  group_by(City) %>%
+  arrange(Date.Local) %>%
+  mutate(derivative_NO2 = c(NA, diff(NO2.AQI)))
+
+ggplot(data_pollution, aes(x = Date.Local, y = derivative_NO2, color = City)) +
+  geom_line() +
+  labs(title = "Dérivées des données de NO2.AQI par ville",
+       x = "Date",
+       y = "Dérivée de NO2.AQI")
+```
+
+
+
+
+# Idées en vrac
+
+## Analyse descriptive
+
+```{r}
+# Statistiques descriptives
+summary(data_pollution$NO2.AQI)
+
+# Histogramme
+ggplot(data_pollution, aes(x = NO2.AQI)) +
+  geom_histogram(binwidth = 5, fill = "blue", color = "black") +
+  labs(title = "Distribution de NO2.AQI", x = "NO2.AQI", y = "Fréquence")
+```
+
+## Tendance temporelle
+
+```{r}
+ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI, group = City, color = City)) +
+  geom_line() +
+  labs(title = "Tendance temporelle de NO2.AQI", x = "Date", y = "NO2.AQI")
+```
+
+## Corrélations avec d'autres polluants
+
+```{r}
+# Matrice de corrélation
+cor_matrix <- cor(data_pollution[, c("NO2.AQI", "O3.AQI", "SO2.AQI", "CO.AQI")])
+print(cor_matrix)
+
+# Graphique de dispersion
+pairs(data_pollution[, c("NO2.AQI", "O3.AQI", "SO2.AQI", "CO.AQI")])
+```
+
+## Identification des pics de pollution
+
+```{r}
+# Identifier les jours avec des niveaux élevés de NO2.AQI
+high_NO2_days <- data_pollution %>%
+  filter(NO2.AQI > 50)  # Remplacez 'seuil' par votre valeur seuil
+
+# Graphique des pics de pollution
+ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI)) +
+  geom_line() +
+  geom_point(data = high_NO2_days, aes(x = Date.Local, y = NO2.AQI, color = "red")) +
+  labs(title = "Identification des pics de pollution de NO2.AQI", x = "Date", y = "NO2.AQI")
+```
+
+
+
+
+
+
 

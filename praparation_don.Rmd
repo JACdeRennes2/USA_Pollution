@@ -15,11 +15,8 @@ pollution_us_2000_2016 <- na.omit(pollution_us_2000_2016)
 ```
 
 ```{r}
-villes <- c("Phoenix", "Scottsdale", "Tucson", "Concord", "Bethel Island",
-            "San Pablo", "Pittsburg", "Calexico", "Bakersfield", "Burbank",
-            "Los Angeles", "Long Beach", "Hawthorne", "Costa Mesa", "Rubidoux",
-            "Not in a city", "Arden-Arcade", "Victorville", "Chula Vista", "San Diego",
-            "San Francisco", "Capitan", "Lompoc", "Goleta", "Vandenberg Air Force Base")
+villes <- c("Phoenix", "Tucson", "Pittsburg", "Los Angeles", "Long Beach", "Victorville", "San Diego", "San Francisco", "Washington", "Chicago", "Kansas City", "Ashland", "Louisville", "Detroit", "Camden", "New York", "Charlotte", "Pittsburgh", "Philadelphia", "Dallas", "Houston", "Oakland", "Boston", "Miami", "Portland", "San Antonio", "Cleveland", "Oklahoma City", "Salt Lake City", "Seattle")
+
 data.frame(unique(pollution_us_2000_2016$City))[which(unique(pollution_us_2000_2016$City) %in% villes),1]
 ```
 
