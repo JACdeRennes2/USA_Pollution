@@ -8,6 +8,8 @@ output: html_document
 ```{r}
 library(tidyverse)
 library(ggplot2)
+library(fda)
+library(reshape2)
 ```
 
 ```{r}
@@ -72,6 +74,21 @@ ggplot(data_pollution, aes(x = Date.Local, y = derivative_NO2, color = City)) +
        y = "Dérivée de NO2.AQI")
 ```
 
+# Représentation de New York pour chaque année
+
+```{r}
+smoothed_data$Year <- format(smoothed_data$Date.Local, "%Y")
+smoothed_data_NY <- smoothed_data[which(smoothed_data$City=="New York"),]
+
+ggplot(smoothed_data_NY, aes(x = as.numeric(format(Date.Local, "%j")), y = smoothed_NO2, group = Year, color = Year)) +
+  geom_line() +
+  labs(title = "Évolution de NO2.AQI à New York (2000-2016)",
+       x = "Jour de l'année",
+       y = "NO2.AQI") +
+  theme_minimal()
+
+```
+
 
 
 
@@ -110,7 +127,7 @@ pairs(data_pollution[, c("NO2.AQI", "O3.AQI", "SO2.AQI", "CO.AQI")])
 
 ## Identification des pics de pollution
 
-```{r}
+```{r eval=FALSE}
 # Identifier les jours avec des niveaux élevés de NO2.AQI
 high_NO2_days <- data_pollution %>%
   filter(NO2.AQI > 50)  # Remplacez 'seuil' par votre valeur seuil
@@ -122,8 +139,60 @@ ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI)) +
   labs(title = "Identification des pics de pollution de NO2.AQI", x = "Date", y = "NO2.AQI")
 ```
 
+## Analyse fonctionnelle
+
+```{r}
+data_long <- melt(data_pollution, id.vars=c("City", "Date.Local"), variable.name="Pollutant")
+data_long$Date.Local <- as.Date(data_long$Date.Local)
+data_long$Pollutant <- as.factor(data_long$Pollutant)
+
+no2_data <- data_long[data_long$Pollutant == "NO2.AQI", ]
+no2_fd <- smooth.spline(no2_data$Date.Local, no2_data$value, df = 10)
+
+plot(no2_fd)
 
 
+summary(no2_fd)
+
+```
+
+```{r}
+no2_basis <- create.bspline.basis(rangeval = range(data_pollution$Date.Local), nbasis = 10)
+
+no2_fd <- smooth.basis(argvals = data_pollution$Date.Local, y = data_pollution$NO2.AQI, fdParobj = no2_basis)
+
+plot(no2_fd, main = "Analyse de données fonctionnelles de NO2.AQI")
+```
+La courbe obtenue à partir de l'analyse fonctionnelle peut montrer la tendance générale de la pollution de NO2.AQI au fil des années. On observe qu'il y a une diminution dans les niveaux de pollution.
+
+
+
+```{r}
+# Extraction des valeurs de NO2.AQI
+no2_values <- data_pollution$NO2.AQI
+
+# Création d'un objet fd (functional data) avec les valeurs de NO2.AQI
+no2_fd <- Data2fd(y = no2_values)
+
+# Visualisation des courbes fonctionnelles
+plot(no2_fd, main="NO2.AQI over Time")
+
+# Analyse avec des B-splines
+bspline_fit <- smooth.basis(no2_data, method="bspline", df=10)
+plot(bspline_fit, main="B-spline Fit")
+
+# Analyse avec des B-splines pénalisées (smooth.pcl)
+bspline_penalized_fit <- smooth.basis(no2_data, method="bspline", df=10, lambda=0.1)
+plot(bspline_penalized_fit, main="Penalized B-spline Fit")
+
+# Analyse avec la transformation de Fourier
+fourier_fit <- smooth.basis(no2_data, method="fourier", nf=5)
+plot(fourier_fit, main="Fourier Fit")
+
+# Analyse avec des onglets
+tab_fit <- smooth.basis(no2_data, method="tps", df=5)
+plot(tab_fit, main="Thin-plate spline Fit")
+```
 
 
 
