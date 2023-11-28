@@ -10,6 +10,7 @@ library(tidyverse)
 library(ggplot2)
 library(fda)
 library(reshape2)
+library(wavethresh)
 ```
 
 ```{r}
@@ -195,5 +196,37 @@ plot(tab_fit, main="Thin-plate spline Fit")
 ```
 
 
+## Ondelettes 
+
+```{r}
+# Choisissez la ville (Phoenix par exemple)
+selected_city <- "Phoenix"
+city_data <- data_pollution %>% filter(City == selected_city)
+
+# Assurez-vous que les données sont ordonnées par date
+city_data <- city_data %>% arrange(Date.Local)
+
+# Ajoutez du bruit (vous pouvez ajuster le niveau de bruit selon vos besoins)
+city_data$NO2.AQI_noisy <- city_data$NO2.AQI + rnorm(n = nrow(city_data), mean = 0, sd = 5)
+
+# Ajuster la longueur en ajoutant des zéros à la fin
+length_power_of_two <- 2^ceiling(log2(length(city_data$NO2.AQI_noisy)))
+padded_data <- c(city_data$NO2.AQI_noisy, rep(0, length_power_of_two - length(city_data$NO2.AQI_noisy)))
+
+# Décomposition en ondelettes
+coefs <- wd(padded_data, filter.number = 4, family = "DaubExPhase")
+
+# Seuillage des coefficients (seuillage doux par exemple)
+dsoft <- threshold(coefs, type = "soft", policy = "universal")
+
+# Reconstruction du signal seuillé
+fsoft <- wr(dsoft)
+
+# Visualisation des résultats
+plot(city_data$Date.Local, city_data$NO2.AQI_noisy, type = "l", col = "blue", main = "Débruitage en ondelettes")
+lines(city_data$Date.Local, fsoft, col = "red", lty = 2)
+legend("topright", c("Signal bruité", "Signal débruité"), col = c("blue", "red"), lty = 1:2)
+
+```
 
 
