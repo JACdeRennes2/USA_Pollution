@@ -301,34 +301,44 @@ print(gg)
 ## Ondelettes 
 
 ```{r}
-# Choisissez la ville (Phoenix par exemple)
-selected_city <- "Phoenix"
-city_data <- data_pollution %>% filter(City == selected_city)
+# Select one of the pollutants (e.g., NO2.AQI) for analysis
+pollutant_data <- data_pollution$NO2.AQI
 
-# Assurez-vous que les données sont ordonnées par date
-city_data <- city_data %>% arrange(Date.Local)
+# Trouver la longueur la plus proche de puissance de deux
+length_power_of_two <- 2^ceiling(log2(length(pollutant_data)))
 
-# Ajoutez du bruit (vous pouvez ajuster le niveau de bruit selon vos besoins)
-city_data$NO2.AQI_noisy <- city_data$NO2.AQI + rnorm(n = nrow(city_data), mean = 0, sd = 5)
+# Remplir avec des valeurs manquantes ou tronquer pour atteindre la longueur
+pollutant_data_adjusted <- c(pollutant_data, rep(NA, length_power_of_two - length(pollutant_data)))
 
-# Ajuster la longueur en ajoutant des zéros à la fin
-length_power_of_two <- 2^ceiling(log2(length(city_data$NO2.AQI_noisy)))
-padded_data <- c(city_data$NO2.AQI_noisy, rep(0, length_power_of_two - length(city_data$NO2.AQI_noisy)))
+# Effectuer une analyse en ondelettes
+wavelet_result <- wd(pollutant_data_adjusted, filter.number = 4, family = "DaubExPhase")
 
-# Décomposition en ondelettes
-coefs <- wd(padded_data, filter.number = 4, family = "DaubExPhase")
+# Restreindre le tracé à la longueur d'origine
+plot(wavelet_result, main = "Wavelet Decomposition", xlim = c(1, length(pollutant_data)))
 
-# Seuillage des coefficients (seuillage doux par exemple)
-dsoft <- threshold(coefs, type = "soft", policy = "universal")
 
-# Reconstruction du signal seuillé
-fsoft <- wr(dsoft)
+# Plot the wavelet decomposition
+plot(wavelet_result)
 
-# Visualisation des résultats
-plot(city_data$Date.Local, city_data$NO2.AQI_noisy, type = "l", col = "blue", main = "Débruitage en ondelettes")
-lines(city_data$Date.Local, fsoft, col = "red", lty = 2)
-legend("topright", c("Signal bruité", "Signal débruité"), col = c("blue", "red"), lty = 1:2)
+# Extract wavelet coefficients
+coefficients <- coef(wavelet_result)
 
+# Plot the scaling function and wavelet functions
+par(mfrow=c(1,2))
+matplot(coefficients[, 1], type="l", main="Scaling function")
+matplot(coefficients[, 2:ncol(coefficients)], type="l", main="Wavelet functions")
+
+# Generate random functions using wavelet coefficients
+n <- 30
+nbbase <- ncol(coefficients)
+random_functions <- matrix(0, ncol = n, nrow = nbbase)
+
+for (i in 1:n) {
+  random_functions[, i] <- apply(t(rnorm(nbbase, 0, 1) * t(coefficients)), 1, sum)
+}
+
+# Plot multiple random functions
+matplot(random_functions, type="l", main="Random Functions")
 ```
 
 
