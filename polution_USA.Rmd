@@ -12,6 +12,8 @@ library(fda)
 library(reshape2)
 library(wavethresh)
 library(lubridate)
+library(splines)
+library(dplyr)
 ```
 
 # Importation des données
@@ -127,7 +129,6 @@ for (n_components in components_values) {
 
 # Tracer les données originales et lissées pour différentes valeurs de composants
 ggplot() +
-  geom_line(data = new_york_data, aes(x = Date.Local, y = variable_to_smooth), color = "black") +
   geom_line(data = all_smoothed, aes(x = date, y = smoothed_variable, color = as.factor(components))) +
   scale_color_manual(values = c("red", "green", "blue", "purple")) +
   labs(title = "Comparaison des Courbes Lissées pour Différentes Valeurs de Composants",
@@ -191,8 +192,97 @@ ggplot() +
 
 ## Lissage avec Spline
 
+```{r}
+# Renommer votre jeu de données
+all_stocks_data <- data_pollution
+
+# Sélectionner la ville de Phoenix
+one_stock_data <- filter(all_stocks_data, City == "Phoenix")
+
+# Convertir la colonne "Date.Local" en classe Date
+one_stock_data$Date.Local <- as.Date(one_stock_data$Date.Local)
+
+# Créer une nouvelle colonne "date_num"
+one_stock_data$date_num <- as.numeric(one_stock_data$Date.Local - min(one_stock_data$Date.Local))
+
+# Initialiser un dataframe pour stocker les résultats lissés pour chaque valeur de noeud
+all_smoothed <- data.frame()
+
+# Boucle sur les différentes valeurs de noeuds
+nbasis_values <- c(6, 10, 8, 12, 15)
+
+for (nbasis in nbasis_values) {
+
+  # Créer la base de spline pour la valeur de noeud actuelle
+  splbasis <- bs(one_stock_data$date_num, df = nbasis, degree = 3, knots = NULL, intercept = FALSE)
+
+  # Obtenir la matrice de base
+  Phi <- predict(splbasis, newdata = list(x = one_stock_data$date_num))
+
+  # Calculer les coefficients de la spline pénalisée
+  chat <- solve(crossprod(Phi), crossprod(Phi, one_stock_data$NO2.AQI))
+
+  # Ajouter les résultats lissés à all_smoothed
+  all_smoothed <- rbind(all_smoothed, data.frame(
+    date = one_stock_data$Date.Local,
+    smoothed_NO2_AQI = Phi %*% chat,
+    nbasis = nbasis
+  ))
+}
+
+# Tracer les données originales et les courbes ajustées par spline avec ggplot2
+gg <- ggplot() +
+  geom_line(data = one_stock_data, aes(x = Date.Local, y = NO2.AQI), color = "blue", size = 1) +
+  geom_line(data = all_smoothed, aes(x = date, y = smoothed_NO2_AQI, group = nbasis, color = as.factor(nbasis)), size = 1) +
+  scale_color_discrete(name = "Nombre de Noeuds") +
+  labs(title = "Régression Spline Pénalisée pour la Pollution NO2 à Phoenix avec Différents Noeuds",
+       x = "Date",
+       y = "NO2 AQI") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+
+# Afficher le graphique
+print(gg)
+```
+
 
 ## Lissage avec spline pénalisé
+
+```{r}
+# Définir un vecteur de valeurs de spar à tester
+spar_values <- c(0.5, 0.7, 1.0, 1.5)
+
+# Initialiser un dataframe pour stocker les résultats lissés pour chaque valeur de spar
+all_smoothed <- data.frame()
+
+# Boucle sur les différentes valeurs de spar
+for (spar in spar_values) {
+  # Ajuster une spline pénalisée avec la valeur de spar actuelle
+  fit <- smooth.spline(one_stock_data$date_num, one_stock_data$NO2.AQI, spar = spar)
+  
+  # Ajouter les résultats lissés à all_smoothed
+  smoothed <- data.frame(
+    date = one_stock_data$Date.Local,
+    smoothed_NO2_AQI = predict(fit, one_stock_data$date_num)$y,
+    spar = as.factor(spar) # Convertir en facteur pour le coloriage par ggplot
+  )
+  
+  all_smoothed <- rbind(all_smoothed, smoothed)
+}
+
+# Tracer toutes les courbes lissées avec différentes valeurs de spar sur un seul graphique
+gg <- ggplot(all_smoothed, aes(x = date, y = smoothed_NO2_AQI, color = spar)) +
+  geom_line() +
+  labs(title = "Comparaison des Courbes Lissées pour Différentes Valeurs de Spar",
+       x = "Date",
+       y = "NO2 AQI Lissé") +
+  theme_minimal() +
+  theme(legend.title = element_text(size = 10), legend.text = element_text(size = 8))
+
+# Afficher le graphique
+print(gg)
+```
+
 
 
 ## Ondelettes 
