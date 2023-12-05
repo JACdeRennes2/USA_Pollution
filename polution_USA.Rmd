@@ -1,5 +1,5 @@
 ---
-title: "Pollution aux USA"
+title: "La Pollution aux USA"
 author: "Clément PEREON et Jules AVIGNON"
 date: "2023-11-22"
 output: html_document
@@ -25,6 +25,7 @@ data_pollution$Date.Local <- as.Date(data_pollution$Date.Local)
 ```
 
 Ces données contiennent les taux dans l'air de quatre polluants mesurés journalièrement pour 30 villes aux États-Unis, entre 2000 et 2016.
+<br>
 Dans la suite, nous avons choisi d'étudier le NO2, car ce polluant est plus pertinent dans le contexte de la qualité de l'air, en particulier dans les zones urbaines. Les émissions de NO2 sont souvent liées aux activités de combustion, telles que le trafic automobile et les installations industrielles.
 
 # Description et représentations informatives des données
@@ -39,6 +40,8 @@ ggplot(data_pollution, aes(x = NO2.AQI)) +
   labs(title = "Distribution de NO2.AQI", x = "NO2.AQI", y = "Fréquence")
 ```
 
+On observe que les valeurs de NO2 sont majoritairement comprises entre 0 et 50 ppb (parts per billion).
+
 ## Tendance temporelle
 
 ```{r}
@@ -47,7 +50,7 @@ ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI, group = City, color = Ci
   labs(title = "Tendance temporelle de NO2.AQI", x = "Date", y = "NO2.AQI")
 ```
 
-Représentation peu lisible, nécéssité de lisser les donner et de faire du cas par cas.
+Cette représentation est peu lisible du fait du nombre important de données et d'individus. Pour mieux les appréhender il serait judicieux d'appliquer un lissage à notre jeu de données.
 
 Pour une meilleure visualisation, nous prenons les données de la ville de Phoenix car c'est la première ville du jeu de données.
 
@@ -61,12 +64,10 @@ ggplot(data_pho, aes(x = Date.Local, y = NO2.AQI)) +
 
 ## Identification des pics de pollution
 
-```{r eval=FALSE}
-# Identifier les jours avec des niveaux élevés de NO2.AQI
+```{r}
 high_NO2_days <- data_pollution %>%
   filter(NO2.AQI > 100)  # Remplacez 'seuil' par votre valeur seuil
 
-# Graphique des pics de pollution
 ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI)) +
   geom_line() +
   geom_point(data = high_NO2_days, aes(x = Date.Local, y = NO2.AQI, color = "red")) +
@@ -86,53 +87,30 @@ print(cor_matrix)
 pairs(data_pollution[, c("NO2.AQI", "O3.AQI", "SO2.AQI", "CO.AQI")])
 ```
 
-## Représentation de Phoenix pour chaque année
+On n'observe pas de relation particulière entre ces quatre polluant, mis à part entre NO2 et CO. En effet, ces deux polluants semblent corrélés positivement.
 
-```{r}
-smoothed_data$Year <- format(smoothed_data$Date.Local, "%Y")
-smoothed_data_NY <- smoothed_data[which(smoothed_data$City=="Phoenix"),]
-
-ggplot(smoothed_data_NY, aes(x = as.numeric(format(Date.Local, "%j")), y = smoothed_NO2, group = Year, color = Year)) +
-  geom_line() +
-  labs(title = "Évolution de NO2.AQI à Phoenix (2000-2016)",
-       x = "Jour de l'année",
-       y = "NO2.AQI") +
-  theme_minimal()
-
-```
 
 # Lissage des données
 
 ## Fourier
 
-On teste d'abord avec la ville de New York pour tenter d'obtenir le meilleur lissage de Fourier.
+On teste d'abord avec la ville de Phoenix pour tenter d'obtenir le meilleur lissage de Fourier.
 
 ```{r}
-data_phoenix <- filter(data_pollution, City == "Phoenix")
+variable_to_smooth <- data_pho$NO2.AQI
 
-# Choisissez la variable que vous souhaitez lisser (par exemple, NO2.AQI)
-variable_to_smooth <- data_phoenix$NO2.AQI
+components_values <- c(50, 100, 150, 200)
 
-# Choisissez les valeurs de composants pour le lissage de Fourier
-components_values <- c(2, 5, 10, 20)
-
-# Initialiser un dataframe pour stocker les résultats lissés pour chaque valeur de composants
 all_smoothed <- data.frame()
 
-# Boucle sur les différentes valeurs de composants
 for (n_components in components_values) {
-  # Appliquer la transformation rapide de Fourier (FFT)
   fft_result <- fft(variable_to_smooth)
-  
-  # Zéro les composantes de fréquence au-delà des n_components premières
   fft_result[(n_components + 1):(length(fft_result) - n_components)] <- 0
   
-  # Effectuer la transformation inverse de Fourier pour obtenir les données lissées
   smoothed <- Re(fft(fft_result, inverse = TRUE)) / length(fft_result)
   
-  # Ajouter les données lissées à all_smoothed pour la valeur de composants actuelle
   smoothed_data <- data.frame(
-    date = data_phoenix$Date.Local, 
+    date = data_pho$Date.Local, 
     smoothed_variable = smoothed, 
     components = rep(n_components, length(smoothed))
   )
@@ -140,49 +118,37 @@ for (n_components in components_values) {
   all_smoothed <- rbind(all_smoothed, smoothed_data)
 }
 
-# Tracer les données originales et lissées pour différentes valeurs de composants
 ggplot() +
   geom_line(data = all_smoothed, aes(x = date, y = smoothed_variable, color = as.factor(components))) +
   scale_color_manual(values = c("red", "green", "blue", "purple")) +
-  labs(title = "Comparaison des Courbes Lissées pour Différentes Valeurs de Composants",
+  labs(title = "Comparaison des courbes lissées pour différentes valeurs de composants",
        x = "Date", y = "Variable Lissée") +
   theme_minimal() +
   theme(legend.position = "bottom")
 
 ```
 
-Le meilleur composant semble être le 10 ??? à vérifier
+Un nombre de composants égal à 100 ou 150 est certes élevé mais peut être justifié dans notre cas pour capturer des variations très fines dans nos données.
 
 On applique le lissage à toutes les villes.
 
 ```{r}
-
-# Choisissez la variable que vous souhaitez lisser (par exemple, NO2.AQI)
 variable_to_smooth <- data_pollution$NO2.AQI
 
-# Choisissez le nombre de composants pour le lissage de Fourier
-n_components <- 10
+n_components <- 100
 
-# Initialiser un dataframe pour stocker les résultats lissés pour chaque ville
 all_smoothed <- data.frame()
 
-# Boucle sur les différentes villes
 for (city in unique(data_pollution$City)) {
-  # Filtrer les données pour la ville actuelle
-  one_city_data <- filter(data_pollution, City == city)
+  data_ville <- filter(data_pollution, City == city)
   
-  # Appliquer la transformation rapide de Fourier (FFT)
-  fft_result <- fft(one_city_data$NO2.AQI)
-  
-  # Zéro les composantes de fréquence au-delà des n_components premières
+  fft_result <- fft(data_ville$NO2.AQI)
   fft_result[(n_components + 1):(length(fft_result) - n_components)] <- 0
   
-  # Effectuer la transformation inverse de Fourier pour obtenir les données lissées
   smoothed <- Re(fft(fft_result, inverse = TRUE)) / length(fft_result)
   
-  # Ajouter les données lissées à all_smoothed pour la ville actuelle
   smoothed_data <- data.frame(
-    date = one_city_data$Date.Local, 
+    date = data_ville$Date.Local, 
     smoothed_variable = smoothed, 
     city = rep(city, length(smoothed))
   )
@@ -190,110 +156,76 @@ for (city in unique(data_pollution$City)) {
   all_smoothed <- rbind(all_smoothed, smoothed_data)
 }
 
-# Tracer les données lissées pour toutes les villes
 ggplot() +
   geom_line(data = all_smoothed, aes(x = date, y = smoothed_variable, color = city)) +
-  labs(title = "Courbes Lissées pour NO2.AQI avec 10 Composants de Fourier",
+  labs(title = "Courbes Lissées pour NO2.AQI avec 100 Composants de Fourier",
        x = "Date", y = "Variable Lissée") +
   theme_minimal() +
   theme(legend.position = "bottom")
 ```
 
 
-
-
-
 ## Lissage avec Spline
 
 ```{r}
-# Renommer votre jeu de données
-all_stocks_data <- data_pollution
+data_pho$date_num <- as.numeric(data_pho$Date.Local - min(data_pho$Date.Local))
 
-# Sélectionner la ville de Phoenix
-one_stock_data <- filter(all_stocks_data, City == "Phoenix")
-
-# Convertir la colonne "Date.Local" en classe Date
-one_stock_data$Date.Local <- as.Date(one_stock_data$Date.Local)
-
-# Créer une nouvelle colonne "date_num"
-one_stock_data$date_num <- as.numeric(one_stock_data$Date.Local - min(one_stock_data$Date.Local))
-
-# Initialiser un dataframe pour stocker les résultats lissés pour chaque valeur de noeud
 all_smoothed <- data.frame()
 
-# Boucle sur les différentes valeurs de noeuds
 nbasis_values <- c(6, 10, 8, 12, 15)
 
 for (nbasis in nbasis_values) {
+  splbasis <- bs(data_pho$date_num, df = nbasis, degree = 3, knots = NULL, intercept = FALSE)
 
-  # Créer la base de spline pour la valeur de noeud actuelle
-  splbasis <- bs(one_stock_data$date_num, df = nbasis, degree = 3, knots = NULL, intercept = FALSE)
+    Phi <- predict(splbasis, newdata = list(x = data_pho$date_num))
 
-  # Obtenir la matrice de base
-  Phi <- predict(splbasis, newdata = list(x = one_stock_data$date_num))
+  chat <- solve(crossprod(Phi), crossprod(Phi, data_pho$NO2.AQI))
 
-  # Calculer les coefficients de la spline pénalisée
-  chat <- solve(crossprod(Phi), crossprod(Phi, one_stock_data$NO2.AQI))
-
-  # Ajouter les résultats lissés à all_smoothed
   all_smoothed <- rbind(all_smoothed, data.frame(
-    date = one_stock_data$Date.Local,
+    date = data_pho$Date.Local,
     smoothed_NO2_AQI = Phi %*% chat,
     nbasis = nbasis
   ))
 }
 
-# Tracer les données originales et les courbes ajustées par spline avec ggplot2
-gg <- ggplot() +
-  geom_line(data = one_stock_data, aes(x = Date.Local, y = NO2.AQI), color = "blue", size = 1) +
+ggplot() +
+  geom_line(data = data_pho, aes(x = Date.Local, y = NO2.AQI), color = "blue", size = 1) +
   geom_line(data = all_smoothed, aes(x = date, y = smoothed_NO2_AQI, group = nbasis, color = as.factor(nbasis)), size = 1) +
   scale_color_discrete(name = "Nombre de Noeuds") +
-  labs(title = "Régression Spline Pénalisée pour la Pollution NO2 à Phoenix avec Différents Noeuds",
+  labs(title = "Régression spline pénalisée pour la pollution NO2 à Phoenix avec différents noeuds",
        x = "Date",
        y = "NO2 AQI") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
-
-# Afficher le graphique
-print(gg)
 ```
 
 
 ## Lissage avec spline pénalisé
 
 ```{r}
-# Définir un vecteur de valeurs de spar à tester
 spar_values <- c(0.5, 0.7, 1.0, 1.5)
 
-# Initialiser un dataframe pour stocker les résultats lissés pour chaque valeur de spar
 all_smoothed <- data.frame()
 
-# Boucle sur les différentes valeurs de spar
 for (spar in spar_values) {
-  # Ajuster une spline pénalisée avec la valeur de spar actuelle
-  fit <- smooth.spline(one_stock_data$date_num, one_stock_data$NO2.AQI, spar = spar)
+  fit <- smooth.spline(data_pho$date_num, data_pho$NO2.AQI, spar = spar)
   
-  # Ajouter les résultats lissés à all_smoothed
   smoothed <- data.frame(
-    date = one_stock_data$Date.Local,
-    smoothed_NO2_AQI = predict(fit, one_stock_data$date_num)$y,
-    spar = as.factor(spar) # Convertir en facteur pour le coloriage par ggplot
+    date = data_pho$Date.Local,
+    smoothed_NO2_AQI = predict(fit, data_pho$date_num)$y,
+    spar = as.factor(spar)
   )
   
   all_smoothed <- rbind(all_smoothed, smoothed)
 }
 
-# Tracer toutes les courbes lissées avec différentes valeurs de spar sur un seul graphique
-gg <- ggplot(all_smoothed, aes(x = date, y = smoothed_NO2_AQI, color = spar)) +
+ggplot(all_smoothed, aes(x = date, y = smoothed_NO2_AQI, color = spar)) +
   geom_line() +
-  labs(title = "Comparaison des Courbes Lissées pour Différentes Valeurs de Spar",
+  labs(title = "Comparaison des courbes lissées pour différentes valeurs de spar",
        x = "Date",
        y = "NO2 AQI Lissé") +
   theme_minimal() +
   theme(legend.title = element_text(size = 10), legend.text = element_text(size = 8))
-
-# Afficher le graphique
-print(gg)
 ```
 
 
@@ -336,6 +268,10 @@ legend("topright", c("Signal bruité", "Signal débruité"), col = c("blue", "re
 
 
 
+
+
+
+
 # Analyse fonctionnelle
 
 ```{r}
@@ -360,8 +296,22 @@ no2_fd <- smooth.basis(argvals = data_pollution$Date.Local, y = data_pollution$N
 
 plot(no2_fd, main = "Analyse de données fonctionnelles de NO2.AQI")
 ```
+
 La courbe obtenue à partir de l'analyse fonctionnelle peut montrer la tendance générale de la pollution de NO2.AQI au fil des années. On observe qu'il y a une diminution dans les niveaux de pollution.
 
 
 
+## Représentation de Phoenix pour chaque année
 
+```{r}
+smoothed_data$Year <- format(smoothed_data$Date.Local, "%Y")
+smoothed_data_NY <- smoothed_data[which(smoothed_data$City=="Phoenix"),]
+
+ggplot(smoothed_data_NY, aes(x = as.numeric(format(Date.Local, "%j")), y = smoothed_NO2, group = Year, color = Year)) +
+  geom_line() +
+  labs(title = "Évolution de NO2.AQI à Phoenix (2000-2016)",
+       x = "Jour de l'année",
+       y = "NO2.AQI") +
+  theme_minimal()
+
+```
