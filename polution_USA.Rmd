@@ -22,6 +22,8 @@ library(dplyr)
 data_pollution <- read.csv("data_pollution.csv", sep=";")
 
 data_pollution$Date.Local <- as.Date(data_pollution$Date.Local)
+
+data_pollution <- data_pollution %>% group_by(City, Date.Local) %>% slice(1)
 ```
 
 Ces données contiennent les taux dans l'air de quatre polluants mesurés journalièrement pour 30 villes aux États-Unis, entre 2000 et 2016.
@@ -300,7 +302,7 @@ print(gg)
 
 ## Ondelettes 
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 # Select one of the pollutants (e.g., NO2.AQI) for analysis
 pollutant_data <- data_pollution$NO2.AQI
 
@@ -372,6 +374,42 @@ plot(no2_fd, main = "Analyse de données fonctionnelles de NO2.AQI")
 ```
 La courbe obtenue à partir de l'analyse fonctionnelle peut montrer la tendance générale de la pollution de NO2.AQI au fil des années. On observe qu'il y a une diminution dans les niveaux de pollution.
 
+```{r}
+data_pollution <- data_pollution %>% group_by(City, Date.Local) %>% slice(1)
+
+# Extraire le mois et l'année de la colonne Date.Local
+data_pollution$Day <- format(data_pollution$Date.Local, "%b%d")
+data_pollution$Year <- format(data_pollution$Date.Local, "%Y")
+
+# Sélectionner uniquement les colonnes nécessaires
+data_subset <- data_pollution[, c("City", "Day", "Year", "NO2.AQI")]
+
+# Créer le nouveau data.frame avec les valeurs de NO2.AQI
+new_df <- data_subset %>%
+  pivot_wider(names_from = City, values_from = NO2.AQI)
+
+data_2016 <- new_df[which(new_df$Year == "2016"),]
+data_2016 <- column_to_rownames(data_2016, var = "Day")
+data_2016 <- data_2016[, -c(1:2)]
+
+#conversion des variables de data_2016 en numérique
+data_2016 <- data_2016 %>% mutate_all(as.numeric)
+data_2016 <- as.matrix(data_2016)
+```
+
+
+```{r}
+splbasis = create.bspline.basis(c(1,152),norder=4,breaks=seq(1,152,30))
+gcv = 1:21
+for (i in 1:21){
+  lambda = exp(i-10)
+  fdparTemp = fdPar(splbasis,Lfdobj = 2,lambda=lambda)
+  smoothdata = smooth.basis(1:152,data_2016,fdParobj = fdparTemp)
+  gcv[i] = mean(smoothdata$gcv)
+}
+plot(gcv)
+which.min(gcv)
+```
 
 
 
