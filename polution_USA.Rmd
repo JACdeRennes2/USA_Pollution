@@ -11,6 +11,7 @@ library(ggplot2)
 library(fda)
 library(reshape2)
 library(wavethresh)
+library(lubridate)
 ```
 
 # Importation des données
@@ -89,11 +90,9 @@ ggplot(smoothed_data_NY, aes(x = as.numeric(format(Date.Local, "%j")), y = smoot
 
 ## Fourier
 
-```{r}
-library(tidyverse)
-library(lubridate)
+On teste d'abord avec la ville de New York pour tenter d'obtenir le meilleur lissage de Fourier.
 
-# Filtrer les données pour une ville spécifique (par exemple, New York)
+```{r}
 new_york_data <- filter(data_pollution, City == "New York")
 
 # Choisissez la variable que vous souhaitez lisser (par exemple, NO2.AQI)
@@ -138,6 +137,53 @@ ggplot() +
 
 ```
 
+Le meilleur composant semble être le 10 ??? à vérifier
+
+On applique le lissage à toutes les villes.
+
+```{r}
+
+# Choisissez la variable que vous souhaitez lisser (par exemple, NO2.AQI)
+variable_to_smooth <- data_pollution$NO2.AQI
+
+# Choisissez le nombre de composants pour le lissage de Fourier
+n_components <- 10
+
+# Initialiser un dataframe pour stocker les résultats lissés pour chaque ville
+all_smoothed <- data.frame()
+
+# Boucle sur les différentes villes
+for (city in unique(data_pollution$City)) {
+  # Filtrer les données pour la ville actuelle
+  one_city_data <- filter(data_pollution, City == city)
+  
+  # Appliquer la transformation rapide de Fourier (FFT)
+  fft_result <- fft(one_city_data$NO2.AQI)
+  
+  # Zéro les composantes de fréquence au-delà des n_components premières
+  fft_result[(n_components + 1):(length(fft_result) - n_components)] <- 0
+  
+  # Effectuer la transformation inverse de Fourier pour obtenir les données lissées
+  smoothed <- Re(fft(fft_result, inverse = TRUE)) / length(fft_result)
+  
+  # Ajouter les données lissées à all_smoothed pour la ville actuelle
+  smoothed_data <- data.frame(
+    date = one_city_data$Date.Local, 
+    smoothed_variable = smoothed, 
+    city = rep(city, length(smoothed))
+  )
+  
+  all_smoothed <- rbind(all_smoothed, smoothed_data)
+}
+
+# Tracer les données lissées pour toutes les villes
+ggplot() +
+  geom_line(data = all_smoothed, aes(x = date, y = smoothed_variable, color = city)) +
+  labs(title = "Courbes Lissées pour NO2.AQI avec 10 Composants de Fourier",
+       x = "Date", y = "Variable Lissée") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
 
 
 
