@@ -276,14 +276,6 @@ matplot(random_functions, type="l", main="Random Functions")
 ```
 
 
-# Statistique exploratoire
-
-
-
-
-
-
-
 # Analyse fonctionnelle
 
 ```{r}
@@ -311,6 +303,8 @@ plot(no2_fd, main = "Analyse de données fonctionnelles de NO2.AQI")
 
 La courbe obtenue à partir de l'analyse fonctionnelle peut montrer la tendance générale de la pollution de NO2.AQI au fil des années. On observe qu'il y a une diminution dans les niveaux de pollution.
 
+## ACP
+
 ```{r}
 # Extraire le mois et l'année de la colonne Date.Local
 all_smoothed$Day <- format(all_smoothed$date, "%b%d")
@@ -324,6 +318,7 @@ data_2015 <- new_df[which(new_df$Year == "2015"),]
 data_2015 <- column_to_rownames(data_2015, var = "Day")
 data_2015 <- data_2015[, -c(1:2)]
 
+#REMPLACER LES NA PAR LES MOYENNES
 #conversion des variables de data_2015 en numérique
 data_2015 <- data_2015 %>% mutate_all(as.numeric)
 data_2015 <- as.matrix(data_2015)
