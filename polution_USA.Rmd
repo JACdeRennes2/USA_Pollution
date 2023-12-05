@@ -46,14 +46,17 @@ ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI, group = City, color = Ci
   geom_line() +
   labs(title = "Tendance temporelle de NO2.AQI", x = "Date", y = "NO2.AQI")
 ```
+
 Représentation peu lisible, nécéssité de lisser les donner et de faire du cas par cas.
 
-```{r}
-data_ny <- subset(data_pollution, City == "New York")
+Pour une meilleure visualisation, nous prenons les données de la ville de Phoenix car c'est la première ville du jeu de données.
 
-ggplot(data_ny, aes(x = Date.Local, y = NO2.AQI)) +
+```{r}
+data_pho <- subset(data_pollution, City == "Phoenix")
+
+ggplot(data_pho, aes(x = Date.Local, y = NO2.AQI)) +
   geom_line(color = "blue") +
-  labs(title = "Tendance temporelle de NO2.AQI à New York", x = "Date", y = "NO2.AQI")
+  labs(title = "Tendance temporelle de NO2.AQI à Phoenix", x = "Date", y = "NO2.AQI")
 ```
 
 ## Identification des pics de pollution
@@ -61,7 +64,7 @@ ggplot(data_ny, aes(x = Date.Local, y = NO2.AQI)) +
 ```{r eval=FALSE}
 # Identifier les jours avec des niveaux élevés de NO2.AQI
 high_NO2_days <- data_pollution %>%
-  filter(NO2.AQI > 50)  # Remplacez 'seuil' par votre valeur seuil
+  filter(NO2.AQI > 100)  # Remplacez 'seuil' par votre valeur seuil
 
 # Graphique des pics de pollution
 ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI)) +
@@ -69,6 +72,8 @@ ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI)) +
   geom_point(data = high_NO2_days, aes(x = Date.Local, y = NO2.AQI, color = "red")) +
   labs(title = "Identification des pics de pollution de NO2.AQI", x = "Date", y = "NO2.AQI")
 ```
+
+Avec le temps, on observe de moins en moins de pics de pollution.
 
 ## Corrélations avec d'autres polluants
 
@@ -81,15 +86,15 @@ print(cor_matrix)
 pairs(data_pollution[, c("NO2.AQI", "O3.AQI", "SO2.AQI", "CO.AQI")])
 ```
 
-## Représentation de New York pour chaque année
+## Représentation de Phoenix pour chaque année
 
 ```{r}
 smoothed_data$Year <- format(smoothed_data$Date.Local, "%Y")
-smoothed_data_NY <- smoothed_data[which(smoothed_data$City=="New York"),]
+smoothed_data_NY <- smoothed_data[which(smoothed_data$City=="Phoenix"),]
 
 ggplot(smoothed_data_NY, aes(x = as.numeric(format(Date.Local, "%j")), y = smoothed_NO2, group = Year, color = Year)) +
   geom_line() +
-  labs(title = "Évolution de NO2.AQI à New York (2000-2016)",
+  labs(title = "Évolution de NO2.AQI à Phoenix (2000-2016)",
        x = "Jour de l'année",
        y = "NO2.AQI") +
   theme_minimal()
@@ -103,10 +108,10 @@ ggplot(smoothed_data_NY, aes(x = as.numeric(format(Date.Local, "%j")), y = smoot
 On teste d'abord avec la ville de New York pour tenter d'obtenir le meilleur lissage de Fourier.
 
 ```{r}
-new_york_data <- filter(data_pollution, City == "New York")
+data_phoenix <- filter(data_pollution, City == "Phoenix")
 
 # Choisissez la variable que vous souhaitez lisser (par exemple, NO2.AQI)
-variable_to_smooth <- new_york_data$NO2.AQI
+variable_to_smooth <- data_phoenix$NO2.AQI
 
 # Choisissez les valeurs de composants pour le lissage de Fourier
 components_values <- c(2, 5, 10, 20)
@@ -127,7 +132,7 @@ for (n_components in components_values) {
   
   # Ajouter les données lissées à all_smoothed pour la valeur de composants actuelle
   smoothed_data <- data.frame(
-    date = new_york_data$Date.Local, 
+    date = data_phoenix$Date.Local, 
     smoothed_variable = smoothed, 
     components = rep(n_components, length(smoothed))
   )
