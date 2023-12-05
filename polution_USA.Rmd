@@ -46,6 +46,14 @@ ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI, group = City, color = Ci
 ```
 Représentation peu lisible, nécéssité de lisser les donner et de faire du cas par cas.
 
+```{r}
+data_ny <- subset(data_pollution, City == "New York")
+
+ggplot(data_ny, aes(x = Date.Local, y = NO2.AQI)) +
+  geom_line(color = "blue") +
+  labs(title = "Tendance temporelle de NO2.AQI à New York", x = "Date", y = "NO2.AQI")
+```
+
 ## Identification des pics de pollution
 
 ```{r eval=FALSE}
@@ -99,7 +107,7 @@ new_york_data <- filter(data_pollution, City == "New York")
 variable_to_smooth <- new_york_data$NO2.AQI
 
 # Choisissez les valeurs de composants pour le lissage de Fourier
-components_values <- c(5, 10, 20, 30)
+components_values <- c(2, 5, 10, 20)
 
 # Initialiser un dataframe pour stocker les résultats lissés pour chaque valeur de composants
 all_smoothed <- data.frame()
@@ -127,7 +135,6 @@ for (n_components in components_values) {
 
 # Tracer les données originales et lissées pour différentes valeurs de composants
 ggplot() +
-  geom_line(data = new_york_data, aes(x = Date.Local, y = variable_to_smooth), color = "black") +
   geom_line(data = all_smoothed, aes(x = date, y = smoothed_variable, color = as.factor(components))) +
   scale_color_manual(values = c("red", "green", "blue", "purple")) +
   labs(title = "Comparaison des Courbes Lissées pour Différentes Valeurs de Composants",
