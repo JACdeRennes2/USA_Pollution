@@ -172,7 +172,7 @@ data_pho$date_num <- as.numeric(data_pho$Date.Local - min(data_pho$Date.Local))
 
 all_smoothed <- data.frame()
 
-nbasis_values <- c(6, 10, 8, 12, 15)
+nbasis_values <- c(5, 10, 15)
 
 for (nbasis in nbasis_values) {
   splbasis <- bs(data_pho$date_num, df = nbasis, degree = 3, knots = NULL, intercept = FALSE)
@@ -203,7 +203,7 @@ ggplot() +
 ## Lissage avec spline pénalisé
 
 ```{r}
-spar_values <- c(0.5, 0.7, 1.0, 1.5)
+spar_values <- c(0.001, 0.01, 0.1, 1)
 
 all_smoothed <- data.frame()
 
