@@ -128,7 +128,7 @@ ggplot() +
 
 ```
 
-Un nombre de composants égal à 100 ou 150 est certes élevé mais peut être justifié dans notre cas pour capturer des variations très fines dans nos données.
+Un nombre de composants égal à 100 ou 150 est, certes élevé, mais peut être justifié dans notre cas pour capturer des variations très fines dans nos données.
 
 On applique le lissage à toutes les villes.
 
@@ -164,7 +164,6 @@ ggplot() +
   theme(legend.position = "bottom")
 ```
 
-
 ## Lissage avec Spline
 
 ```{r}
@@ -192,18 +191,19 @@ ggplot() +
   geom_line(data = data_pho, aes(x = Date.Local, y = NO2.AQI), color = "blue", size = 1) +
   geom_line(data = all_smoothed, aes(x = date, y = smoothed_NO2_AQI, group = nbasis, color = as.factor(nbasis)), size = 1) +
   scale_color_discrete(name = "Nombre de Noeuds") +
-  labs(title = "Régression spline pénalisée pour la pollution NO2 à Phoenix avec différents noeuds",
+  labs(title = "Régression spline pour la pollution NO2 à Phoenix avec différents noeuds",
        x = "Date",
        y = "NO2 AQI") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
+A partir de 10 noeuds, on observe que le lissage suit bien la tendance.
 
 ## Lissage avec spline pénalisé
 
 ```{r}
-spar_values <- c(0.001, 0.01, 0.1, 1)
+spar_values <- seq(0.1, 0.9, by = 0.1)
 
 all_smoothed <- data.frame()
 
@@ -221,14 +221,14 @@ for (spar in spar_values) {
 
 ggplot(all_smoothed, aes(x = date, y = smoothed_NO2_AQI, color = spar)) +
   geom_line() +
-  labs(title = "Comparaison des courbes lissées pour différentes valeurs de spar",
+  labs(title = "Comparaison des courbes lissées avec spline pénalisé",
        x = "Date",
        y = "NO2 AQI Lissé") +
   theme_minimal() +
   theme(legend.title = element_text(size = 10), legend.text = element_text(size = 8))
 ```
 
-
+On n'observe pas de différence significative entre les pénalités lorsqu'elles sont inférieures à 0.5.
 
 ## Ondelettes 
 
@@ -264,7 +264,7 @@ legend("topright", c("Signal bruité", "Signal débruité"), col = c("blue", "re
 ```
 
 
-
+# Statistique exploratoire
 
 
 
