@@ -5,7 +5,7 @@ date: "2023-11-22"
 output: html_document
 ---
 
-```{r}
+```{r echo=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(fda)
@@ -13,95 +13,24 @@ library(reshape2)
 library(wavethresh)
 ```
 
+# Importation des données
+
 ```{r}
 data_pollution <- read.csv("data_pollution.csv", sep=";")
 
 data_pollution$Date.Local <- as.Date(data_pollution$Date.Local)
 ```
 
+Ces données contiennent les taux dans l'air de quatre polluants mesurés journalièrement pour 30 villes aux États-Unis, entre 2000 et 2016.
+Dans la suite, nous avons choisi d'étudier le NO2, car ce polluant est plus pertinent dans le contexte de la qualité de l'air, en particulier dans les zones urbaines. Les émissions de NO2 sont souvent liées aux activités de combustion, telles que le trafic automobile et les installations industrielles.
+
 # Description et représentations informatives des données
 
-```{r}
-data_2000 <- subset(data_pollution, format(Date.Local, "%Y") == "2000")
-
-ggplot(data_2000, aes(x = Date.Local, y = NO2.AQI, color = City)) +
-  geom_line(size = 1) +
-  labs(title = "Concentration de NO2 en 2021",
-       x = "Date",
-       y = "NO2.AQI",
-       color = "City") +
-  theme_minimal()
-```
+## Statistiques descriptives
 
 ```{r}
-data_phoenix <- subset(data_pollution, City == "Phoenix")
-
-ggplot(data_phoenix, aes(x = as.Date(format(Date.Local, "%Y-%m-%d")), y = NO2.AQI, color = format(Date.Local, "%Y"))) +
-  geom_line(size = 1) +
-  labs(title = "Concentration de NO2 par année (échelle annuelle)",
-       x = "Date",
-       y = "NO2.AQI",
-       color = "Année") +
-  theme_minimal()
-```
-
-# Lissage des données
-
-```{r}
-smoothed_data <- data_pollution %>%
-  group_by(City) %>%
-  arrange(Date.Local) %>%
-  mutate(smoothed_NO2 = smooth.spline(NO2.AQI)$y)
-
-ggplot(smoothed_data, aes(x = Date.Local, y = smoothed_NO2, color = City)) +
-  geom_line() +
-  labs(title = "Lissage des données de NO2.AQI par ville",
-       x = "Date",
-       y = "NO2.AQI")
-```
-
-# Dérivées
-
-```{r}
-data_pollution <- data_pollution %>%
-  group_by(City) %>%
-  arrange(Date.Local) %>%
-  mutate(derivative_NO2 = c(NA, diff(NO2.AQI)))
-
-ggplot(data_pollution, aes(x = Date.Local, y = derivative_NO2, color = City)) +
-  geom_line() +
-  labs(title = "Dérivées des données de NO2.AQI par ville",
-       x = "Date",
-       y = "Dérivée de NO2.AQI")
-```
-
-# Représentation de New York pour chaque année
-
-```{r}
-smoothed_data$Year <- format(smoothed_data$Date.Local, "%Y")
-smoothed_data_NY <- smoothed_data[which(smoothed_data$City=="New York"),]
-
-ggplot(smoothed_data_NY, aes(x = as.numeric(format(Date.Local, "%j")), y = smoothed_NO2, group = Year, color = Year)) +
-  geom_line() +
-  labs(title = "Évolution de NO2.AQI à New York (2000-2016)",
-       x = "Jour de l'année",
-       y = "NO2.AQI") +
-  theme_minimal()
-
-```
-
-
-
-
-# Idées en vrac
-
-## Analyse descriptive
-
-```{r}
-# Statistiques descriptives
 summary(data_pollution$NO2.AQI)
 
-# Histogramme
 ggplot(data_pollution, aes(x = NO2.AQI)) +
   geom_histogram(binwidth = 5, fill = "blue", color = "black") +
   labs(title = "Distribution de NO2.AQI", x = "NO2.AQI", y = "Fréquence")
@@ -114,17 +43,7 @@ ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI, group = City, color = Ci
   geom_line() +
   labs(title = "Tendance temporelle de NO2.AQI", x = "Date", y = "NO2.AQI")
 ```
-
-## Corrélations avec d'autres polluants
-
-```{r}
-# Matrice de corrélation
-cor_matrix <- cor(data_pollution[, c("NO2.AQI", "O3.AQI", "SO2.AQI", "CO.AQI")])
-print(cor_matrix)
-
-# Graphique de dispersion
-pairs(data_pollution[, c("NO2.AQI", "O3.AQI", "SO2.AQI", "CO.AQI")])
-```
+Représentation peu lisible, nécéssité de lisser les donner et de faire du cas par cas.
 
 ## Identification des pics de pollution
 
@@ -140,60 +59,94 @@ ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI)) +
   labs(title = "Identification des pics de pollution de NO2.AQI", x = "Date", y = "NO2.AQI")
 ```
 
-## Analyse fonctionnelle
+## Corrélations avec d'autres polluants
 
 ```{r}
-data_long <- melt(data_pollution, id.vars=c("City", "Date.Local"), variable.name="Pollutant")
-data_long$Date.Local <- as.Date(data_long$Date.Local)
-data_long$Pollutant <- as.factor(data_long$Pollutant)
+# Matrice de corrélation
+cor_matrix <- cor(data_pollution[, c("NO2.AQI", "O3.AQI", "SO2.AQI", "CO.AQI")])
+print(cor_matrix)
 
-no2_data <- data_long[data_long$Pollutant == "NO2.AQI", ]
-no2_fd <- smooth.spline(no2_data$Date.Local, no2_data$value, df = 10)
+# Graphique de dispersion
+pairs(data_pollution[, c("NO2.AQI", "O3.AQI", "SO2.AQI", "CO.AQI")])
+```
 
-plot(no2_fd)
+## Représentation de New York pour chaque année
 
+```{r}
+smoothed_data$Year <- format(smoothed_data$Date.Local, "%Y")
+smoothed_data_NY <- smoothed_data[which(smoothed_data$City=="New York"),]
 
-summary(no2_fd)
+ggplot(smoothed_data_NY, aes(x = as.numeric(format(Date.Local, "%j")), y = smoothed_NO2, group = Year, color = Year)) +
+  geom_line() +
+  labs(title = "Évolution de NO2.AQI à New York (2000-2016)",
+       x = "Jour de l'année",
+       y = "NO2.AQI") +
+  theme_minimal()
 
 ```
 
-```{r}
-no2_basis <- create.bspline.basis(rangeval = range(data_pollution$Date.Local), nbasis = 10)
+# Lissage des données
 
-no2_fd <- smooth.basis(argvals = data_pollution$Date.Local, y = data_pollution$NO2.AQI, fdParobj = no2_basis)
-
-plot(no2_fd, main = "Analyse de données fonctionnelles de NO2.AQI")
-```
-La courbe obtenue à partir de l'analyse fonctionnelle peut montrer la tendance générale de la pollution de NO2.AQI au fil des années. On observe qu'il y a une diminution dans les niveaux de pollution.
-
-
+## Fourier
 
 ```{r}
-# Extraction des valeurs de NO2.AQI
-no2_values <- data_pollution$NO2.AQI
+library(tidyverse)
+library(lubridate)
 
-# Création d'un objet fd (functional data) avec les valeurs de NO2.AQI
-no2_fd <- Data2fd(y = no2_values)
+# Filtrer les données pour une ville spécifique (par exemple, New York)
+new_york_data <- filter(data_pollution, City == "New York")
 
-# Visualisation des courbes fonctionnelles
-plot(no2_fd, main="NO2.AQI over Time")
+# Choisissez la variable que vous souhaitez lisser (par exemple, NO2.AQI)
+variable_to_smooth <- new_york_data$NO2.AQI
 
-# Analyse avec des B-splines
-bspline_fit <- smooth.basis(no2_data, method="bspline", df=10)
-plot(bspline_fit, main="B-spline Fit")
+# Choisissez les valeurs de composants pour le lissage de Fourier
+components_values <- c(5, 10, 20, 30)
 
-# Analyse avec des B-splines pénalisées (smooth.pcl)
-bspline_penalized_fit <- smooth.basis(no2_data, method="bspline", df=10, lambda=0.1)
-plot(bspline_penalized_fit, main="Penalized B-spline Fit")
+# Initialiser un dataframe pour stocker les résultats lissés pour chaque valeur de composants
+all_smoothed <- data.frame()
 
-# Analyse avec la transformation de Fourier
-fourier_fit <- smooth.basis(no2_data, method="fourier", nf=5)
-plot(fourier_fit, main="Fourier Fit")
+# Boucle sur les différentes valeurs de composants
+for (n_components in components_values) {
+  # Appliquer la transformation rapide de Fourier (FFT)
+  fft_result <- fft(variable_to_smooth)
+  
+  # Zéro les composantes de fréquence au-delà des n_components premières
+  fft_result[(n_components + 1):(length(fft_result) - n_components)] <- 0
+  
+  # Effectuer la transformation inverse de Fourier pour obtenir les données lissées
+  smoothed <- Re(fft(fft_result, inverse = TRUE)) / length(fft_result)
+  
+  # Ajouter les données lissées à all_smoothed pour la valeur de composants actuelle
+  smoothed_data <- data.frame(
+    date = new_york_data$Date.Local, 
+    smoothed_variable = smoothed, 
+    components = rep(n_components, length(smoothed))
+  )
+  
+  all_smoothed <- rbind(all_smoothed, smoothed_data)
+}
 
-# Analyse avec des onglets
-tab_fit <- smooth.basis(no2_data, method="tps", df=5)
-plot(tab_fit, main="Thin-plate spline Fit")
+# Tracer les données originales et lissées pour différentes valeurs de composants
+ggplot() +
+  geom_line(data = new_york_data, aes(x = Date.Local, y = variable_to_smooth), color = "black") +
+  geom_line(data = all_smoothed, aes(x = date, y = smoothed_variable, color = as.factor(components))) +
+  scale_color_manual(values = c("red", "green", "blue", "purple")) +
+  labs(title = "Comparaison des Courbes Lissées pour Différentes Valeurs de Composants",
+       x = "Date", y = "Variable Lissée") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
 ```
+
+
+
+
+
+
+## Lissage avec Spline
+
+
+## Lissage avec spline pénalisé
 
 
 ## Ondelettes 
@@ -228,5 +181,38 @@ lines(city_data$Date.Local, fsoft, col = "red", lty = 2)
 legend("topright", c("Signal bruité", "Signal débruité"), col = c("blue", "red"), lty = 1:2)
 
 ```
+
+
+
+
+
+
+# Analyse fonctionnelle
+
+```{r}
+data_long <- melt(data_pollution, id.vars=c("City", "Date.Local"), variable.name="Pollutant")
+data_long$Date.Local <- as.Date(data_long$Date.Local)
+data_long$Pollutant <- as.factor(data_long$Pollutant)
+
+no2_data <- data_long[data_long$Pollutant == "NO2.AQI", ]
+no2_fd <- smooth.spline(no2_data$Date.Local, no2_data$value, df = 10)
+
+plot(no2_fd)
+
+
+summary(no2_fd)
+
+```
+
+```{r}
+no2_basis <- create.bspline.basis(rangeval = range(data_pollution$Date.Local), nbasis = 10)
+
+no2_fd <- smooth.basis(argvals = data_pollution$Date.Local, y = data_pollution$NO2.AQI, fdParobj = no2_basis)
+
+plot(no2_fd, main = "Analyse de données fonctionnelles de NO2.AQI")
+```
+La courbe obtenue à partir de l'analyse fonctionnelle peut montrer la tendance générale de la pollution de NO2.AQI au fil des années. On observe qu'il y a une diminution dans les niveaux de pollution.
+
+
 
 
