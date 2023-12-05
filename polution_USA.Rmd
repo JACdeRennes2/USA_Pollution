@@ -101,7 +101,7 @@ On teste d'abord avec la ville de Phoenix pour tenter d'obtenir le meilleur liss
 ```{r}
 data_pho$date_num <- as.numeric(data_pho$Date.Local - min(data_pho$Date.Local))
 
-smoothed_data <- data.frame()
+all_smoothed <- data.frame()
 
 nbasis_values <- c(5, 10, 15)
 
@@ -112,7 +112,7 @@ for (nbasis in nbasis_values) {
 
   chat <- solve(crossprod(Phi), crossprod(Phi, data_pho$NO2.AQI))
 
-  smoothed_data <- rbind(smoothed_data, data.frame(
+  all_smoothed <- rbind(smoothed_data, data.frame(
     date = data_pho$Date.Local,
     smoothed_NO2_AQI = Phi %*% chat,
     nbasis = nbasis
@@ -121,7 +121,7 @@ for (nbasis in nbasis_values) {
 
 ggplot() +
   geom_line(data = data_pho, aes(x = Date.Local, y = NO2.AQI), color = "blue", size = 1) +
-  geom_line(data = smoothed_data, aes(x = date, y = smoothed_NO2_AQI, group = nbasis, color = as.factor(nbasis)), size = 1) +
+  geom_line(data = all_smoothed, aes(x = date, y = smoothed_NO2_AQI, group = nbasis, color = as.factor(nbasis)), size = 1) +
   scale_color_discrete(name = "Nombre de Noeuds") +
   labs(title = "Régression spline pour la pollution NO2 à Phoenix avec différents noeuds",
        x = "Date",
@@ -137,7 +137,7 @@ A partir de 10 noeuds, on observe que le lissage suit bien la tendance.
 ```{r}
 lambda_values <- seq(0.1, 0.9, by = 0.1)
 
-smoothed_data <- data.frame()
+all_smoothed <- data.frame()
 
 for (lambda in lambda_values) {
   fit <- smooth.spline(data_pho$date_num, data_pho$NO2.AQI, spar = 1-lambda)
@@ -148,10 +148,10 @@ for (lambda in lambda_values) {
     spar = as.factor(1-lambda)
   )
   
-  smoothed_data <- rbind(smoothed_data, smoothed)
+  all_smoothed <- rbind(all_smoothed, smoothed)
 }
 
-ggplot(smoothed_data, aes(x = date, y = smoothed_NO2_AQI, color = spar)) +
+ggplot(all_smoothed, aes(x = date, y = smoothed_NO2_AQI, color = spar)) +
   geom_line() +
   labs(title = "Comparaison des courbes lissées avec spline pénalisé",
        x = "Date",
@@ -169,7 +169,7 @@ variable_to_smooth <- data_pho$NO2.AQI
 
 components_values <- c(50, 100, 150, 200)
 
-smoothed_data <- data.frame()
+all_smoothed <- data.frame()
 
 for (n_components in components_values) {
   fft_result <- fft(variable_to_smooth)
@@ -183,11 +183,11 @@ for (n_components in components_values) {
     components = rep(n_components, length(smoothed))
   )
   
-  smoothed_data <- rbind(all_smoothed, smoothed_data)
+  all_smoothed <- rbind(all_smoothed, smoothed_data)
 }
 
 ggplot() +
-  geom_line(data = smoothed_data, aes(x = date, y = smoothed_variable, color = as.factor(components))) +
+  geom_line(data = all_smoothed, aes(x = date, y = smoothed_variable, color = as.factor(components))) +
   scale_color_manual(values = c("red", "green", "blue", "purple")) +
   labs(title = "Comparaison des courbes lissées pour différentes valeurs de composants",
        x = "Date", y = "Variable Lissée") +
@@ -205,7 +205,7 @@ variable_to_smooth <- data_pollution$NO2.AQI
 
 n_components <- 100
 
-smoothed_data <- data.frame()
+all_smoothed <- data.frame()
 
 for (city in unique(data_pollution$City)) {
   data_ville <- filter(data_pollution, City == city)
@@ -221,11 +221,11 @@ for (city in unique(data_pollution$City)) {
     city = rep(city, length(smoothed))
   )
   
-  smoothed_data <- rbind(smoothed_data, smoothed_data)
+  all_smoothed <- rbind(all_smoothed, smoothed_data)
 }
 
 ggplot() +
-  geom_line(data = smoothed_data, aes(x = date, y = smoothed_variable, color = city)) +
+  geom_line(data = all_smoothed, aes(x = date, y = smoothed_variable, color = city)) +
   labs(title = "Courbes Lissées pour NO2.AQI avec 100 Composants de Fourier",
        x = "Date", y = "Variable Lissée") +
   theme_minimal() +
