@@ -318,15 +318,15 @@ all_smoothed$Year <- format(all_smoothed$date, "%Y")
 
 # Créer le nouveau data.frame avec les valeurs de NO2.AQI
 new_df <- all_smoothed %>%
-  pivot_wider(names_from = City, values_from = NO2.AQI)
+  pivot_wider(names_from = city, values_from = smoothed_variable)
 
-data_2016 <- new_df[which(new_df$Year == "2016"),]
-data_2016 <- column_to_rownames(data_2016, var = "Day")
-data_2016 <- data_2016[, -c(1:2)]
+data_2015 <- new_df[which(new_df$Year == "2015"),]
+data_2015 <- column_to_rownames(data_2015, var = "Day")
+data_2015 <- data_2015[, -c(1:2)]
 
-#conversion des variables de data_2016 en numérique
-data_2016 <- data_2016 %>% mutate_all(as.numeric)
-data_2016 <- as.matrix(data_2016)
+#conversion des variables de data_2015 en numérique
+data_2015 <- data_2015 %>% mutate_all(as.numeric)
+data_2015 <- as.matrix(data_2015)
 ```
 
 
@@ -336,7 +336,7 @@ gcv = 1:21
 for (i in 1:21){
   lambda = exp(i-10)
   fdparTemp = fdPar(splbasis,Lfdobj = 2,lambda=lambda)
-  smoothdata = smooth.basis(1:365,data_2016,fdParobj = fdparTemp)
+  smoothdata = smooth.basis(1:365,data_2015,fdParobj = fdparTemp)
   gcv[i] = mean(smoothdata$gcv)
 }
 plot(gcv)
