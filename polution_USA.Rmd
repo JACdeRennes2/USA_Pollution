@@ -355,6 +355,24 @@ data_2015 <- as.data.frame(apply(data_2015, 2, imputer))
 data_2015 <- as.matrix(data_2015)
 ```
 
+```{r}
+# Créer un dataframe avec les villes
+villes <- c("Boston", "Camden", "Charlotte", "Cleveland", "Dallas", "Houston", 
+            "Kansas City", "Long Beach", "Los Angeles", "Louisville", "New York",
+            "Oakland", "Oklahoma City", "Phoenix", "Portland", "Salt Lake City", 
+            "Seattle", "Tucson", "Victorville", "Washington")
+
+# Associer chaque ville à une direction géographique
+directions <- c("Nord-Est", "Nord-Est", "Sud-Est", "Nord-Est", "Sud-Ouest",
+                "Sud-Ouest", "Centre", "Sud-Ouest", "Sud-Ouest", "Centre",
+                "Nord-Est", "Sud-Ouest", "Centre", "Sud-Ouest", "Nord-Ouest",
+                "Centre", "Nord-Ouest", "Sud-Ouest", "Sud-Ouest", "Nord-Est")
+
+# Créer un dataframe avec les associations
+df_direction <- data.frame(ville = villes, direction = directions)
+```
+
+
 ## ACP fonctionnelle
 
 ```{r}
@@ -383,8 +401,12 @@ Les scores des individus sont stockés dans la matrice `scores` de `DataACPF`
 head(DataACPF$scores)
 plot(DataACPF$scores[,1],DataACPF$scores[,2],pch=20,xlab="FPC 1", ylab="FPC 2",type="n")
 nomsvilles = colnames(data_2015)
-text(DataACPF$scores[,1],DataACPF$scores[,2],labels=nomsvilles,cex=0.7)
+position <- as.factor(df_direction$direction)
+text(DataACPF$scores[,1],DataACPF$scores[,2],labels=nomsvilles,cex=0.7, col = as.numeric(position))
+legend("topright", legend = levels(position), col = 1:length(levels(position)), pch = 1, cex = 0.8)
 ```
+
+On observe la formation de clusters, notamment en fonction de la position géographique sur la carte des Etats-Unis. Et que la quantité de NO2 dans l'air n'est pas uniquement liée à la saison comme on l'a indiqué précédemment, mais qu'il s'agit également d'un phénomène géographique.
 
 ## Représentation de Phoenix pour chaque année
 
