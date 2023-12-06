@@ -16,6 +16,13 @@ library(splines)
 library(dplyr)
 ```
 
+# Préparation des données
+
+Nous avons récolté nos données sur le site https://www.kaggle.com/datasets/sogun3/uspollution.
+Ces données contiennent les taux dans l'air de quatre polluants mesurés journalièrement dans plusieurs villes (stations) aux États-Unis, entre 2000 et 2016.
+<br>
+Nous avons restreint notre étude à 30 villes, qui correspondront ainsi à nos individus.
+
 # Importation des données
 
 ```{r}
@@ -26,9 +33,9 @@ data_pollution$Date.Local <- as.Date(data_pollution$Date.Local)
 data_pollution <- data_pollution %>% group_by(City, Date.Local) %>% slice(1)
 ```
 
-Ces données contiennent les taux dans l'air de quatre polluants mesurés journalièrement pour 30 villes (stations) aux États-Unis, entre 2000 et 2016.
-<br>
 Dans la suite, nous avons choisi d'étudier le NO2, car ce polluant est plus pertinent dans le contexte de la qualité de l'air, en particulier dans les zones urbaines. Les émissions de NO2 sont souvent liées aux activités de combustion, telles que le trafic automobile et les installations industrielles.
+<br>
+L'objectif est de déterminer la tendance du taux de NO2 dans l'air aux États-Unis entre 2000 et 2016.
 
 # Description et représentations informatives des données
 
@@ -52,7 +59,7 @@ ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI, group = City, color = Ci
   labs(title = "Tendance temporelle de NO2.AQI", x = "Date", y = "NO2.AQI")
 ```
 
-Cette représentation est peu lisible du fait du nombre important de données et d'individus. Pour mieux les appréhender il serait judicieux d'appliquer un lissage à notre jeu de données.
+Cette représentation est peu lisible du fait du nombre important de données et d'individus. Pour mieux les appréhender, il serait judicieux d'appliquer un lissage à notre jeu de données.
 
 Pour une meilleure visualisation, nous prenons les données de la ville de Phoenix car c'est la première ville du jeu de données.
 
@@ -76,20 +83,26 @@ ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI)) +
   labs(title = "Identification des pics de pollution de NO2.AQI", x = "Date", y = "NO2.AQI")
 ```
 
-Avec le temps, on observe de moins en moins de pics de pollution.
+Avec le temps, on observe de moins en moins de pics de pollution, ce qui suggère une diminution globale de la pollution des villes aux États-Unis.
 
-## Corrélations avec d'autres polluants
+## Représentation mensuel
 
 ```{r}
-# Matrice de corrélation
-cor_matrix <- cor(data_pollution[, c("NO2.AQI", "O3.AQI", "SO2.AQI", "CO.AQI")])
-print(cor_matrix)
+data_pollution$Month <- format(data_pollution$Date.Local, "%m")
 
-# Graphique de dispersion
-pairs(data_pollution[, c("NO2.AQI", "O3.AQI", "SO2.AQI", "CO.AQI")])
+monthly_avg <- data_pollution %>%
+  group_by(Month) %>%
+  summarize(Avg_NO2.AQI = mean(NO2.AQI, na.rm = TRUE))
+
+ggplot(monthly_avg, aes(x = Month, y = Avg_NO2.AQI, group = 1)) +
+  geom_line() +
+  geom_point() +
+  labs(title = "Moyenne mensuelle de NO2.AQI",
+       x = "Mois",
+       y = "Moyenne de NO2.AQI")
 ```
 
-On n'observe pas de relation particulière entre ces quatre polluant, mis à part entre NO2 et CO. En effet, ces deux polluants semblent corrélés positivement.
+ajouter commentaire
 
 
 # Lissage des données
