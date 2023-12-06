@@ -327,12 +327,11 @@ data_2015 <- data_2015 %>% mutate_all(as.numeric)
 
 data_2015 <- data_2015[, colSums(is.na(data_2015)) != nrow(data_2015)]
 
+#remplacement des valeurs vides par la moyenne de la colonne
 imputer <- function(col) {
   non_na_indices <- which(!is.na(col))
   for (i in which(is.na(col))) {
-    precedent_non_na <- max(non_na_indices[non_na_indices < i], default = NA)
-    suivant_non_na <- min(non_na_indices[non_na_indices > i], default = NA)
-    col[i] <- mean(c(col[precedent_non_na], col[suivant_non_na]), na.rm = TRUE)
+    col[i] <- mean(col[non_na_indices])
   }
 
   return(col)
@@ -351,10 +350,42 @@ for (i in 1:21){
   lambda = exp(i-10)
   fdparTemp = fdPar(splbasis,Lfdobj = 2,lambda=lambda)
   smoothdata = smooth.basis(1:365,data_2015,fdParobj = fdparTemp)
-  gcv[i] = mean(smoothdata$gcv)
+  gcv[i] = mean(smoothdata$gcv, na.rm = TRUE)
 }
 plot(gcv)
 which.min(gcv)
+```
+
+
+## ACP fonctionnelle
+
+```{r}
+Datasmooth = smooth.basis(1:365,data_2015,fdParobj = fdparTemp)
+
+DataACPF = pca.fd(Datasmooth$fd,nharm=4,centerfns = TRUE)
+DataACPF$varprop
+cumsum(DataACPF$varprop)
+
+plot(DataACPF$harmonics)
+```
+
+Ou, pour une interprétation plus aisée, la moyenne augmentée ou diminuée des premières fonctions propres.
+
+On peut utiliser la fonction `plot.pca.fd` pour cette représentation.
+
+```{r}
+plot.pca.fd(DataACPF)
+```
+
+ - Représentation des individus (les villes) dans le premier plan factoriel.
+ 
+Les scores des individus sont stockés dans la matrice `scores` de `DataACPF`
+
+```{r}
+head(DataACPF$scores)
+plot(DataACPF$scores[,1],DataACPF$scores[,2],pch=20,xlab="FPC 1", ylab="FPC 2",type="n")
+nomsvilles = colnames(data_2015)
+text(DataACPF$scores[,1],DataACPF$scores[,2],labels=nomsvilles,cex=0.7)
 ```
 
 ## Représentation de Phoenix pour chaque année
