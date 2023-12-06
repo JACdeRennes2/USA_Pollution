@@ -299,6 +299,12 @@ ggplot() +
   theme(legend.position = "bottom")
 ```
 
+## Covariance et corrélation
+
+```{r}
+
+```
+
 
 ## Clément
 
