@@ -85,7 +85,7 @@ ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI)) +
 
 Avec le temps, on observe de moins en moins de pics de pollution, ce qui suggère une diminution globale de la pollution des villes aux États-Unis.
 
-## Représentation mensuel
+## Représentation mensuelle
 
 ```{r}
 data_pollution$Month <- format(data_pollution$Date.Local, "%m")
