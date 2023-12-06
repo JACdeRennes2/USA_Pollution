@@ -235,44 +235,23 @@ ggplot() +
 ## Ondelettes 
 
 ```{r eval=FALSE, include=FALSE}
-# Select one of the pollutants (e.g., NO2.AQI) for analysis
-pollutant_data <- data_pollution$NO2.AQI
-
-# Trouver la longueur la plus proche de puissance de deux
-length_power_of_two <- 2^ceiling(log2(length(pollutant_data)))
-
-# Remplir avec des valeurs manquantes ou tronquer pour atteindre la longueur
-pollutant_data_adjusted <- c(pollutant_data, rep(NA, length_power_of_two - length(pollutant_data)))
-
 # Effectuer une analyse en ondelettes
-wavelet_result <- wd(pollutant_data_adjusted, filter.number = 4, family = "DaubExPhase")
+wavelet_result <- wd(data_phoenix[0:8192,3], type = "wavelet")
 
 # Restreindre le tracé à la longueur d'origine
-plot(wavelet_result, main = "Wavelet Decomposition", xlim = c(1, length(pollutant_data)))
+plot(wavelet_result, main = "Wavelet Decomposition", xlim = c(0, 4096))
+```
+
+```{r}
+wavelet_result
+```
 
 
-# Plot the wavelet decomposition
-plot(wavelet_result)
-
-# Extract wavelet coefficients
-coefficients <- coef(wavelet_result)
-
+```{r}
 # Plot the scaling function and wavelet functions
 par(mfrow=c(1,2))
-matplot(coefficients[, 1], type="l", main="Scaling function")
-matplot(coefficients[, 2:ncol(coefficients)], type="l", main="Wavelet functions")
-
-# Generate random functions using wavelet coefficients
-n <- 30
-nbbase <- ncol(coefficients)
-random_functions <- matrix(0, ncol = n, nrow = nbbase)
-
-for (i in 1:n) {
-  random_functions[, i] <- apply(t(rnorm(nbbase, 0, 1) * t(coefficients)), 1, sum)
-}
-
-# Plot multiple random functions
-matplot(random_functions, type="l", main="Random Functions")
+plot(wavelet_result$C, type="l", main="Représentation des \ncoefficients d'ondelettes")
+plot(wavelet_result$D, type="l", main="Représentation des \ncoefficients d'échelle")
 ```
 
 
