@@ -236,10 +236,10 @@ ggplot() +
 
 ```{r}
 # Effectuer une analyse en ondelettes
-wavelet_result <- wd(data_phoenix[0:8192,3], type = "wavelet")
+wavelet_result <- wd(data_pho$NO2.AQI[0:4096], type = "wavelet")
 
 # Restreindre le tracé à la longueur d'origine
-plot(wavelet_result, main = "Wavelet Decomposition", xlim = c(0, 4096))
+plot(wavelet_result, main = "Wavelet Decomposition", xlim = c(0, 2048))
 ```
 
 ```{r}
