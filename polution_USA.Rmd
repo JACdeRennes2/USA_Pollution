@@ -112,7 +112,7 @@ for (nbasis in nbasis_values) {
 
   chat <- solve(crossprod(Phi), crossprod(Phi, data_pho$NO2.AQI))
 
-  all_smoothed <- rbind(smoothed_data, data.frame(
+  all_smoothed <- rbind(all_smoothed, data.frame(
     date = data_pho$Date.Local,
     smoothed_NO2_AQI = Phi %*% chat,
     nbasis = nbasis
@@ -303,7 +303,25 @@ plot(no2_fd, main = "Analyse de données fonctionnelles de NO2.AQI")
 
 La courbe obtenue à partir de l'analyse fonctionnelle peut montrer la tendance générale de la pollution de NO2.AQI au fil des années. On observe qu'il y a une diminution dans les niveaux de pollution.
 
-## ACP
+## Moyenne et variance fontionnelles
+
+```{r}
+mean_smoothed <- all_smoothed %>%
+  group_by(date) %>%
+  summarise(mean_smoothed_variable = mean(smoothed_variable),
+            sd_smoothed_variable = sd(smoothed_variable))
+
+ggplot() +
+  geom_ribbon(data = mean_smoothed, aes(x = date, ymin = mean_smoothed_variable - sd_smoothed_variable, ymax = mean_smoothed_variable + sd_smoothed_variable), fill = "blue", alpha = 0.3) +
+  geom_line(data = mean_smoothed, aes(x = date, y = mean_smoothed_variable), color = "blue", size = 1) +
+  labs(title = "Moyenne et Variance fonctionnelle pour différentes valeurs de composants",
+       x = "Date", y = "Variable Lissée") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+```
+
+
+## Clément
 
 ```{r}
 # Extraire le mois et l'année de la colonne Date.Local
@@ -318,9 +336,25 @@ data_2015 <- new_df[which(new_df$Year == "2015"),]
 data_2015 <- column_to_rownames(data_2015, var = "Day")
 data_2015 <- data_2015[, -c(1:2)]
 
-#REMPLACER LES NA PAR LES MOYENNES
+#IMPUTER LES NA PAR LES MOYENNES
 #conversion des variables de data_2015 en numérique
 data_2015 <- data_2015 %>% mutate_all(as.numeric)
+
+data_2015 <- data_2015[, colSums(is.na(data_2015)) != nrow(data_2015)]
+
+imputer <- function(col) {
+  non_na_indices <- which(!is.na(col))
+  for (i in which(is.na(col))) {
+    precedent_non_na <- max(non_na_indices[non_na_indices < i], default = NA)
+    suivant_non_na <- min(non_na_indices[non_na_indices > i], default = NA)
+    col[i] <- mean(c(col[precedent_non_na], col[suivant_non_na]), na.rm = TRUE)
+  }
+
+  return(col)
+}
+
+data_2015 <- as.data.frame(apply(data_2015, 2, imputer))
+
 data_2015 <- as.matrix(data_2015)
 ```
 
@@ -337,7 +371,6 @@ for (i in 1:21){
 plot(gcv)
 which.min(gcv)
 ```
-
 
 ## Représentation de Phoenix pour chaque année
 
