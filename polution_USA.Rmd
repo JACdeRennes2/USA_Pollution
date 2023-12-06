@@ -104,6 +104,21 @@ ggplot(monthly_avg, aes(x = Month, y = Avg_NO2.AQI, group = 1)) +
 
 On observe un taux de pollution plus important l'hiver, probablement en raison d'une demande de chauffage qui augmente. De ce fait, de nombreuses personnes utilisent des combustibles fossiles tels que le charbon, le bois, le gaz naturel ou le fioul pour chauffer leurs maisons. La combustion de ces combustibles libère du NO2 dans l'atmosphère.
 
+## Représentation de Phoenix pour chaque année
+
+```{r}
+smoothed_data$Year <- format(smoothed_data$Date.Local, "%Y")
+smoothed_data_NY <- smoothed_data[which(smoothed_data$City=="Phoenix"),]
+
+ggplot(smoothed_data_NY, aes(x = as.numeric(format(Date.Local, "%j")), y = smoothed_NO2, group = Year, color = Year)) +
+  geom_line() +
+  labs(title = "Évolution de NO2.AQI à Phoenix (2000-2016)",
+       x = "Jour de l'année",
+       y = "NO2.AQI") +
+  theme_minimal()
+
+```
+
 
 # Lissage des données
 
@@ -384,19 +399,4 @@ head(DataACPF$scores)
 plot(DataACPF$scores[,1],DataACPF$scores[,2],pch=20,xlab="FPC 1", ylab="FPC 2",type="n")
 nomsvilles = colnames(data_2015)
 text(DataACPF$scores[,1],DataACPF$scores[,2],labels=nomsvilles,cex=0.7)
-```
-
-## Représentation de Phoenix pour chaque année
-
-```{r}
-smoothed_data$Year <- format(smoothed_data$Date.Local, "%Y")
-smoothed_data_NY <- smoothed_data[which(smoothed_data$City=="Phoenix"),]
-
-ggplot(smoothed_data_NY, aes(x = as.numeric(format(Date.Local, "%j")), y = smoothed_NO2, group = Year, color = Year)) +
-  geom_line() +
-  labs(title = "Évolution de NO2.AQI à Phoenix (2000-2016)",
-       x = "Jour de l'année",
-       y = "NO2.AQI") +
-  theme_minimal()
-
 ```
