@@ -21,7 +21,7 @@ library(dplyr)
 Nous avons récolté nos données sur le site https://www.kaggle.com/datasets/sogun3/uspollution.
 Ces données contiennent les taux dans l'air de quatre polluants mesurés journalièrement dans plusieurs villes (stations) aux États-Unis, entre 2000 et 2016.
 <br>
-Nous avons restreint notre étude à 30 villes, qui correspondront ainsi à nos individus.
+Nous avons restreint notre étude à 30 villes que nous avons choisi de façon arbitraire, qui correspondront ainsi à nos individus.
 
 # Importation des données
 
