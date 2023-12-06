@@ -319,7 +319,7 @@ ggplot() +
 ```
 
 
-## Clément
+## Préparation des données de 2015 sans valeurs manquantes pour l'ACP
 
 ```{r}
 # Extraire le mois et l'année de la colonne Date.Local
@@ -354,21 +354,6 @@ data_2015 <- as.data.frame(apply(data_2015, 2, imputer))
 
 data_2015 <- as.matrix(data_2015)
 ```
-
-
-```{r}
-splbasis = create.bspline.basis(c(1,365),norder=4,breaks=seq(1,365,30))
-gcv = 1:21
-for (i in 1:21){
-  lambda = exp(i-10)
-  fdparTemp = fdPar(splbasis,Lfdobj = 2,lambda=lambda)
-  smoothdata = smooth.basis(1:365,data_2015,fdParobj = fdparTemp)
-  gcv[i] = mean(smoothdata$gcv, na.rm = TRUE)
-}
-plot(gcv)
-which.min(gcv)
-```
-
 
 ## ACP fonctionnelle
 
