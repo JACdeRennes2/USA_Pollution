@@ -5,7 +5,7 @@ date: "2023-11-22"
 output: html_document
 ---
 
-```{r echo=FALSE}
+```{r include=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(fda)
