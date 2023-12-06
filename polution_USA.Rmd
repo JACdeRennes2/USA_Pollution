@@ -102,14 +102,14 @@ ggplot(monthly_avg, aes(x = Month, y = Avg_NO2.AQI, group = 1)) +
        y = "Moyenne de NO2.AQI")
 ```
 
-ajouter commentaire
+On observe un taux de pollution plus important l'hiver, probablement en raison d'une demande de chauffage qui augmente. De ce fait, de nombreuses personnes utilisent des combustibles fossiles tels que le charbon, le bois, le gaz naturel ou le fioul pour chauffer leurs maisons. La combustion de ces combustibles libère du NO2 dans l'atmosphère.
 
 
 # Lissage des données
 
 ## Lissage avec Spline
 
-On teste d'abord avec la ville de Phoenix pour tenter d'obtenir le meilleur lissage de Fourier.
+On teste d'abord avec la ville de Phoenix pour tenter d'obtenir le meilleur lissage.
 
 ```{r}
 data_pho$date_num <- as.numeric(data_pho$Date.Local - min(data_pho$Date.Local))
