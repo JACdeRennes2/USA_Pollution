@@ -234,7 +234,7 @@ ggplot() +
 
 ## Ondelettes 
 
-```{r eval=FALSE, include=FALSE}
+```{r}
 # Effectuer une analyse en ondelettes
 wavelet_result <- wd(data_phoenix[0:8192,3], type = "wavelet")
 
