@@ -2,8 +2,21 @@
 title: "La Pollution aux USA"
 author: "Clément PEREON et Jules AVIGNON"
 date: "2023-11-22"
-output: html_document
+output:
+  html_document:
+    css: xaringan-themer.css
 ---
+
+```{r xaringan-themer, include=FALSE, warning=FALSE}
+library(xaringanthemer)
+style_mono_accent(
+  base_color = "#115c30", 
+  background_color = "#f7fce3",
+  header_font_google = google_font("Josefin Sans"),
+  text_font_google   = google_font("Montserrat", "300", "300i"),
+  code_font_google   = google_font("Fira Mono"))
+```
+
 
 ```{r include=FALSE}
 library(tidyverse)
@@ -41,55 +54,59 @@ L'objectif est de déterminer la tendance du taux de NO2 dans l'air aux États-U
 
 ## Statistiques descriptives
 
-```{r}
+```{r, fig.align='center'}
 summary(data_pollution$NO2.AQI)
 
 ggplot(data_pollution, aes(x = NO2.AQI)) +
-  geom_histogram(binwidth = 5, fill = "blue", color = "black") +
-  labs(title = "Distribution de NO2.AQI", x = "NO2.AQI", y = "Fréquence")
+  geom_histogram(binwidth = 5, fill = "#115c30", color = "black") +
+  labs(title = "Distribution de NO2.AQI", x = "NO2.AQI", y = "Fréquence") +
+  theme_minimal()
 ```
 
 On observe que les valeurs de NO2 sont majoritairement comprises entre 0 et 50 ppb (parts per billion).
 
 ## Tendance temporelle
 
-```{r}
+```{r, fig.align='center'}
 ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI, group = City, color = City)) +
   geom_line() +
-  labs(title = "Tendance temporelle de NO2.AQI", x = "Date", y = "NO2.AQI")
+  labs(title = "Tendance temporelle de NO2.AQI", x = "Date", y = "NO2.AQI") +
+  theme_minimal()
 ```
 
 Cette représentation est peu lisible du fait du nombre important de données et d'individus. Pour mieux les appréhender, il serait judicieux d'appliquer un lissage à notre jeu de données, ce que nous ferons par la suite.
 
 Pour une meilleure visualisation, nous prenons les données de la ville de Phoenix car c'est la première ville du jeu de données.
 
-```{r}
+```{r, fig.align='center'}
 data_pho <- subset(data_pollution, City == "Phoenix")
 
 ggplot(data_pho, aes(x = Date.Local, y = NO2.AQI)) +
-  geom_line(color = "blue") +
-  labs(title = "Tendance temporelle de NO2.AQI à Phoenix", x = "Date", y = "NO2.AQI")
+  geom_line(color = "#09331a") +
+  labs(title = "Tendance temporelle de NO2.AQI à Phoenix", x = "Date", y = "NO2.AQI") +
+  theme_minimal()
 ```
 
 La tendance du taux de NO2 dans l'air à Phoenix semble être à la baisse entre 2000 et 2016. Nous allons voir s'il en est de même pour toutes nos villes.
 
 ## Identification des pics de pollution
 
-```{r}
+```{r, fig.align='center'}
 high_NO2_days <- data_pollution %>%
   filter(NO2.AQI > 100)  # Remplacez 'seuil' par votre valeur seuil
 
 ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI)) +
-  geom_line() +
-  geom_point(data = high_NO2_days, aes(x = Date.Local, y = NO2.AQI, color = "red")) +
-  labs(title = "Identification des pics de pollution de NO2.AQI", x = "Date", y = "NO2.AQI")
+  geom_line(col="#09331a") +
+  geom_point(data = high_NO2_days, aes(x = Date.Local, y = NO2.AQI), col="#58a878") +
+  labs(title = "Identification des pics de pollution de NO2.AQI", x = "Date", y = "NO2.AQI") +
+  theme_minimal()
 ```
 
 Avec le temps, on observe de moins en moins de pics de pollution, ce qui suggère une diminution globale de la pollution des villes aux États-Unis.
 
 ## Représentation mensuelle
 
-```{r}
+```{r, fig.align='center'}
 data_pollution$Month <- format(data_pollution$Date.Local, "%m")
 
 monthly_avg <- data_pollution %>%
@@ -97,11 +114,12 @@ monthly_avg <- data_pollution %>%
   summarize(Avg_NO2.AQI = mean(NO2.AQI, na.rm = TRUE))
 
 ggplot(monthly_avg, aes(x = Month, y = Avg_NO2.AQI, group = 1)) +
-  geom_line() +
-  geom_point() +
+  geom_line(col="#09331a") +
+  geom_point(col="#09331a") +
   labs(title = "Moyenne mensuelle de NO2.AQI",
        x = "Mois",
-       y = "Moyenne de NO2.AQI")
+       y = "Moyenne de NO2.AQI") +
+  theme_minimal()
 ```
 
 On observe un taux de pollution plus important l'hiver, probablement en raison d'une demande de chauffage qui augmente. De ce fait, de nombreuses personnes utilisent des combustibles fossiles tels que le charbon, le bois, le gaz naturel ou le fioul pour chauffer leurs maisons. La combustion de ces combustibles libère du NO2 dans l'atmosphère.
@@ -115,14 +133,14 @@ Nous allons à présent lisser nos données à l'aide d'une méthode appropriée
 
 Les splines permettent de capturer des tendances non linéaires, ce qui est souvent le cas dans les séries temporelles de données environnementales comme la pollution atmosphérique. La concentration de polluants peut varier de manière non linéaire au fil du temps en raison de divers facteurs saisonniers, météorologiques, ou d'événements spécifiques.
 
-```{r}
+```{r, fig.align='center'}
 y <- data_pho$NO2.AQI
 splbasis = create.bspline.basis(rangeval=c(1, nrow(data_pho)), norder=4, breaks=seq(1, nrow(data_pho), length=100))
 Phi = getbasismatrix(1:nrow(data_pho), splbasis)
 chat = solve(crossprod(Phi), crossprod(Phi, y))
 fhat = fd(chat, splbasis)
-plot(y, type="l", cex=0.5)
-lines(fhat, col=4, lwd=2)
+plot(y, type="l", cex=0.5, col="#09331a")
+lines(fhat, col="#58a878", lwd=2)
 
 chat2 = Data2fd(1:nrow(data_pho), y, basisobj = splbasis)
 fhat2 = eval.fd(1:nrow(data_pho), chat2)
@@ -138,7 +156,7 @@ Pour une meilleure adaptibilité à nos données, nous allons à présent appliq
 <br>
 Nous testons d'abord avec la ville de Phoenix pour tenter d'obtenir le meilleur lissage.
 
-```{r}
+```{r, fig.align='center'}
 data_pho$date_num <- as.numeric(data_pho$Date.Local - min(data_pho$Date.Local))
 
 lambda_values <- seq(0.1, 0.9, by = 0.1)
@@ -170,7 +188,7 @@ On n'observe pas de différence significative entre les pénalités lorsqu'elles
 
 On aplique le lissage à toutes les villes.
 
-```{r}
+```{r, fig.align='center'}
 data_pollution$date_num <- as.numeric(data_pollution$Date.Local - min(data_pollution$Date.Local))
 
 lambda_value <- 0.5
@@ -206,7 +224,7 @@ Ce lissage nous permet donc d'observer la tendance globale du taux de NO2 dans l
 
 L'abalyse temporelle peut nous aider à identifier les tendances temporelles significatives dans nos données lissées.
 
-```{r}
+```{r, fig.align='center'}
 data_long <- melt(data_pollution, id.vars=c("City", "Date.Local"), variable.name="Pollutant")
 data_long$Date.Local <- as.Date(data_long$Date.Local)
 data_long$Pollutant <- as.factor(data_long$Pollutant)
@@ -214,43 +232,43 @@ data_long$Pollutant <- as.factor(data_long$Pollutant)
 no2_data <- data_long[data_long$Pollutant == "NO2.AQI", ]
 no2_fd <- smooth.spline(no2_data$Date.Local, no2_data$value, df = 10)
 
-plot(no2_fd)
+plot(no2_fd, col="#09331a")
 
 
 summary(no2_fd)
 
 ```
 
-```{r}
+```{r, fig.align='center'}
 no2_basis <- create.bspline.basis(rangeval = range(data_pollution$Date.Local), nbasis = 10)
 
 no2_fd <- smooth.basis(argvals = data_pollution$Date.Local, y = data_pollution$NO2.AQI, fdParobj = no2_basis)
 
-plot(no2_fd, main = "Analyse de données fonctionnelles de NO2.AQI")
+plot(no2_fd, main = "Analyse de données fonctionnelles de NO2.AQI", col="#09331a")
 ```
 
 La courbe obtenue à partir de l'analyse fonctionnelle peut montrer la tendance générale de la pollution de NO2.AQI au fil des années. On observe qu'il y a une diminution dans les niveaux de pollution.
 
 ## Moyenne et variance fontionnelles
 
-```{r}
+```{r, fig.align='center'}
 mean_smoothed <- all_smoothed %>%
   group_by(date) %>%
   summarise(mean_smoothed_variable = mean(smoothed_NO2_AQI),
             sd_smoothed_variable = sd(smoothed_NO2_AQI))
 
 ggplot() +
-  geom_ribbon(data = mean_smoothed, aes(x = date, ymin = mean_smoothed_variable - sd_smoothed_variable, ymax = mean_smoothed_variable + sd_smoothed_variable), fill = "blue", alpha = 0.3) +
-  geom_line(data = mean_smoothed, aes(x = date, y = mean_smoothed_variable), color = "blue", size = 1) +
+  geom_ribbon(data = mean_smoothed, aes(x = date, ymin = mean_smoothed_variable - sd_smoothed_variable, ymax = mean_smoothed_variable + sd_smoothed_variable), fill = "#09331a", alpha = 0.3) +
+  geom_line(data = mean_smoothed, aes(x = date, y = mean_smoothed_variable), color = "#09331a", size = 1) +
   labs(title = "Moyenne et Variance fonctionnelle",
        x = "Date", y = "Variable Lissée") +
   theme_minimal() +
   theme(legend.position = "bottom")
 ```
 
-La ligne bleue représente la moyenne fonctionnelle lissée au fil du temps. Cette ligne présente une tendance significative, qui suggère une augmentation générale de la qualité de l'air (ou diminution du taux de NO2 dans l'air) sur la période étudiée.
+La ligne verte représente la moyenne fonctionnelle lissée au fil du temps. Cette ligne présente une tendance significative, qui suggère une augmentation générale de la qualité de l'air (ou diminution du taux de NO2 dans l'air) sur la période étudiée.
 <br>
-La bande bleue délimitée par les régions ombrées représente l'intervalle de confiance autour de la moyenne lissée. Cet intervalle suggère la variabilité des données lissées à différentes périodes. Une bande plus large indique une plus grande variabilité.
+La bande verte délimitée par les régions ombrées représente l'intervalle de confiance autour de la moyenne lissée. Cet intervalle suggère la variabilité des données lissées à différentes périodes. Une bande plus large indique une plus grande variabilité.
 <br>
 La bande d'intervalle de confiance reste relativement constante sur la période, ce qui indique une stabilité de la tendance. 
 
@@ -298,7 +316,7 @@ villes <- c("Boston", "Camden", "Charlotte", "Cleveland", "Dallas", "Houston",
             "Seattle", "Tucson", "Victorville", "Washington")
 
 # Associer chaque ville à une direction géographique
-directions <- c("Nord-Est", "Nord-Est", "Sud-Est", "Nord-Est", "Sud-Ouest",
+directions <- c("Nord-Est", "Nord-Est", "Sud-Est", "Nord-Est", "Sud",
                 "Sud-Ouest", "Centre", "Sud-Ouest", "Sud-Ouest", "Centre",
                 "Nord-Est", "Sud-Ouest", "Centre", "Sud-Ouest", "Nord-Ouest",
                 "Centre", "Nord-Ouest", "Sud-Ouest", "Sud-Ouest", "Nord-Est")
@@ -310,7 +328,8 @@ df_direction <- data.frame(ville = villes, direction = directions)
 
 ## ACP fonctionnelle
 
-```{r}
+```{r, fig.align='center'}
+splbasis = create.bspline.basis(c(1,365),norder=4,breaks=seq(1,365,30))
 fdparData = fdPar(splbasis,Lfdobj = 2,lambda=lambda)
 Datasmooth = smooth.basis(1:365,data_2015,fdParobj = fdparData)
 
@@ -325,7 +344,7 @@ Ou, pour une interprétation plus aisée, la moyenne augmentée ou diminuée des
 
 On peut utiliser la fonction `plot.pca.fd` pour cette représentation.
 
-```{r}
+```{r, fig.align='center'}
 plot.pca.fd(DataACPF)
 ```
 
@@ -333,7 +352,7 @@ plot.pca.fd(DataACPF)
  
 Les scores des individus sont stockés dans la matrice `scores` de `DataACPF`
 
-```{r}
+```{r, fig.align='center'}
 head(DataACPF$scores)
 plot(DataACPF$scores[,1],DataACPF$scores[,2],pch=20,xlab="FPC 1", ylab="FPC 2",type="n")
 nomsvilles = colnames(data_2015)
