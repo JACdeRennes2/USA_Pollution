@@ -204,7 +204,7 @@ Ce lissage nous permet donc d'observer la tendance globale du taux de NO2 dans l
 
 # Analyse fonctionnelle
 
-
+L'abalyse temporelle peut nous aider à identifier les tendances temporelles significatives dans nos données lissées.
 
 ```{r}
 data_long <- melt(data_pollution, id.vars=c("City", "Date.Local"), variable.name="Pollutant")
@@ -242,11 +242,17 @@ mean_smoothed <- all_smoothed %>%
 ggplot() +
   geom_ribbon(data = mean_smoothed, aes(x = date, ymin = mean_smoothed_variable - sd_smoothed_variable, ymax = mean_smoothed_variable + sd_smoothed_variable), fill = "blue", alpha = 0.3) +
   geom_line(data = mean_smoothed, aes(x = date, y = mean_smoothed_variable), color = "blue", size = 1) +
-  labs(title = "Moyenne et Variance fonctionnelle pour différentes valeurs de composants",
+  labs(title = "Moyenne et Variance fonctionnelle",
        x = "Date", y = "Variable Lissée") +
   theme_minimal() +
   theme(legend.position = "bottom")
 ```
+
+La ligne bleue représente la moyenne fonctionnelle lissée au fil du temps. Cette ligne présente une tendance significative, qui suggère une augmentation générale de la qualité de l'air (ou diminution du taux de NO2 dans l'air) sur la période étudiée.
+<br>
+La bande bleue délimitée par les régions ombrées représente l'intervalle de confiance autour de la moyenne lissée. Cet intervalle suggère la variabilité des données lissées à différentes périodes. Une bande plus large indique une plus grande variabilité.
+<br>
+La bande d'intervalle de confiance reste relativement constante sur la période, ce qui indique une stabilité de la tendance. 
 
 ## Préparation des données de 2015 sans valeurs manquantes pour l'ACP
 
