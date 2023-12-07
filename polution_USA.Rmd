@@ -21,7 +21,7 @@ library(dplyr)
 Nous avons récolté nos données sur le site https://www.kaggle.com/datasets/sogun3/uspollution.
 Ces données contiennent les taux dans l'air de quatre polluants mesurés journalièrement dans plusieurs villes (stations) aux États-Unis, entre 2000 et 2016.
 <br>
-Nous avons restreint notre étude à 30 villes que nous avons choisi de façon arbitraire, qui correspondront ainsi à nos individus.
+Nous avons restreint notre étude à 30 villes que nous avons choisi de manière arbitraire, qui correspondront ainsi à nos individus.
 
 # Importation des données
 
@@ -59,7 +59,7 @@ ggplot(data_pollution, aes(x = Date.Local, y = NO2.AQI, group = City, color = Ci
   labs(title = "Tendance temporelle de NO2.AQI", x = "Date", y = "NO2.AQI")
 ```
 
-Cette représentation est peu lisible du fait du nombre important de données et d'individus. Pour mieux les appréhender, il serait judicieux d'appliquer un lissage à notre jeu de données.
+Cette représentation est peu lisible du fait du nombre important de données et d'individus. Pour mieux les appréhender, il serait judicieux d'appliquer un lissage à notre jeu de données, ce que nous ferons par la suite.
 
 Pour une meilleure visualisation, nous prenons les données de la ville de Phoenix car c'est la première ville du jeu de données.
 
@@ -70,6 +70,8 @@ ggplot(data_pho, aes(x = Date.Local, y = NO2.AQI)) +
   geom_line(color = "blue") +
   labs(title = "Tendance temporelle de NO2.AQI à Phoenix", x = "Date", y = "NO2.AQI")
 ```
+
+La tendance du taux de NO2 dans l'air à Phoenix semble être à la baisse entre 2000 et 2016. Nous allons voir s'il en est de même pour toutes nos villes.
 
 ## Identification des pics de pollution
 
@@ -107,47 +109,38 @@ On observe un taux de pollution plus important l'hiver, probablement en raison d
 
 # Lissage des données
 
-## Lissage avec Spline
+Nous allons à présent lisser nos données à l'aide d'une méthode appropriée afin de mettre en évidence la tendance du taux de NO2 dans l'air à long terme.
 
-On teste d'abord avec la ville de Phoenix pour tenter d'obtenir le meilleur lissage.
+## Lissage avec splines
+
+Les splines permettent de capturer des tendances non linéaires, ce qui est souvent le cas dans les séries temporelles de données environnementales comme la pollution atmosphérique. La concentration de polluants peut varier de manière non linéaire au fil du temps en raison de divers facteurs saisonniers, météorologiques, ou d'événements spécifiques.
+
+```{r}
+y <- data_pho$NO2.AQI
+splbasis = create.bspline.basis(rangeval=c(1, nrow(data_pho)), norder=4, breaks=seq(1, nrow(data_pho), length=100))
+Phi = getbasismatrix(1:nrow(data_pho), splbasis)
+chat = solve(crossprod(Phi), crossprod(Phi, y))
+fhat = fd(chat, splbasis)
+plot(y, type="l", cex=0.5)
+lines(fhat, col=4, lwd=2)
+
+chat2 = Data2fd(1:nrow(data_pho), y, basisobj = splbasis)
+fhat2 = eval.fd(1:nrow(data_pho), chat2)
+chatsb = smooth.basis(argvals=1:nrow(data_pho), y, fdParobj = splbasis)
+
+```
+
+Ici, pour les données de la ville de Phoenix, on observe que le lissage a permis de capter des variations saisonnière, probablement liées aux différents épisodes hivernaux qui traduisent une augmentation du taux de NO2 dans l'air en raison de la combustion liée au chauffage urbain.
+
+## Lissage avec splines pénalisées
+
+Pour une meilleure adaptibilité à nos données, nous allons à présent appliquer un lissage avec les splines pénalisées.
+<br>
+Nous testons d'abord avec la ville de Phoenix pour tenter d'obtenir le meilleur lissage.
 
 ```{r}
 data_pho$date_num <- as.numeric(data_pho$Date.Local - min(data_pho$Date.Local))
 
-all_smoothed <- data.frame()
-
-nbasis_values <- c(5, 10, 15)
-
-for (nbasis in nbasis_values) {
-  splbasis <- bs(data_pho$date_num, df = nbasis, degree = 3, knots = NULL, intercept = FALSE)
-
-  Phi <- predict(splbasis, newdata = list(x = data_pho$date_num))
-
-  chat <- solve(crossprod(Phi), crossprod(Phi, data_pho$NO2.AQI))
-
-  all_smoothed <- rbind(all_smoothed, data.frame(
-    date = data_pho$Date.Local,
-    smoothed_NO2_AQI = Phi %*% chat,
-    nbasis = nbasis
-  ))
-}
-
-ggplot() +
-  geom_line(data = data_pho, aes(x = Date.Local, y = NO2.AQI), color = "blue", size = 1) +
-  geom_line(data = all_smoothed, aes(x = date, y = smoothed_NO2_AQI, group = nbasis, color = as.factor(nbasis)), size = 1) +
-  scale_color_discrete(name = "Nombre de Noeuds") +
-  labs(title = "Régression spline pour la pollution NO2 à Phoenix avec différents noeuds",
-       x = "Date",
-       y = "NO2 AQI") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
-```
-
-A partir de 10 noeuds, on observe que le lissage suit bien la tendance.
-
-## Lissage avec spline pénalisé
-
-```{r}
 lambda_values <- seq(0.1, 0.9, by = 0.1)
 
 all_smoothed <- data.frame()
@@ -166,7 +159,7 @@ for (lambda in lambda_values) {
 
 ggplot(all_smoothed, aes(x = date, y = smoothed_NO2_AQI, color = spar)) +
   geom_line() +
-  labs(title = "Comparaison des courbes lissées avec spline pénalisé",
+  labs(title = "Comparaison des courbes lissées avec splines pénalisées",
        x = "Date",
        y = "NO2 AQI Lissé") +
   theme_minimal() +
@@ -175,100 +168,43 @@ ggplot(all_smoothed, aes(x = date, y = smoothed_NO2_AQI, color = spar)) +
 
 On n'observe pas de différence significative entre les pénalités lorsqu'elles sont inférieures à 0.5.
 
-## Fourier
+On aplique le lissage à toutes les villes.
 
 ```{r}
-variable_to_smooth <- data_pho$NO2.AQI
+data_pollution$date_num <- as.numeric(data_pollution$Date.Local - min(data_pollution$Date.Local))
 
-components_values <- c(50, 100, 150, 200)
-
-all_smoothed <- data.frame()
-
-for (n_components in components_values) {
-  fft_result <- fft(variable_to_smooth)
-  fft_result[(n_components + 1):(length(fft_result) - n_components)] <- 0
-  
-  smoothed <- Re(fft(fft_result, inverse = TRUE)) / length(fft_result)
-  
-  smoothed_data <- data.frame(
-    date = data_pho$Date.Local, 
-    smoothed_variable = smoothed, 
-    components = rep(n_components, length(smoothed))
-  )
-  
-  all_smoothed <- rbind(all_smoothed, smoothed_data)
-}
-
-ggplot() +
-  geom_line(data = all_smoothed, aes(x = date, y = smoothed_variable, color = as.factor(components))) +
-  scale_color_manual(values = c("red", "green", "blue", "purple")) +
-  labs(title = "Comparaison des courbes lissées pour différentes valeurs de composants",
-       x = "Date", y = "Variable Lissée") +
-  theme_minimal() +
-  theme(legend.position = "bottom")
-
-```
-
-Un nombre de composants égal à 100 ou 150 est, certes élevé, mais peut être justifié dans notre cas pour capturer des variations très fines dans nos données.
-
-On applique le lissage à toutes les villes.
-
-```{r}
-variable_to_smooth <- data_pollution$NO2.AQI
-
-n_components <- 100
+lambda_value <- 0.5
 
 all_smoothed <- data.frame()
 
 for (city in unique(data_pollution$City)) {
-  data_ville <- filter(data_pollution, City == city)
+  data_city <- subset(data_pollution, City == city)
+  fit <- smooth.spline(data_city$date_num, data_city$NO2.AQI, spar = 1 - lambda_value)
   
-  fft_result <- fft(data_ville$NO2.AQI)
-  fft_result[(n_components + 1):(length(fft_result) - n_components)] <- 0
-  
-  smoothed <- Re(fft(fft_result, inverse = TRUE)) / length(fft_result)
-  
-  smoothed_data <- data.frame(
-    date = data_ville$Date.Local, 
-    smoothed_variable = smoothed, 
-    city = rep(city, length(smoothed))
+  smoothed <- data.frame(
+    city = city,
+    date = data_city$Date.Local,
+    smoothed_NO2_AQI = predict(fit, data_city$date_num)$y
   )
   
-  all_smoothed <- rbind(all_smoothed, smoothed_data)
+  all_smoothed <- rbind(all_smoothed, smoothed)
 }
 
-ggplot() +
-  geom_line(data = all_smoothed, aes(x = date, y = smoothed_variable, color = city)) +
-  labs(title = "Courbes Lissées pour NO2.AQI avec 100 Composants de Fourier",
-       x = "Date", y = "Variable Lissée") +
+ggplot(all_smoothed, aes(x = date, y = smoothed_NO2_AQI, color = city)) +
+  geom_line() +
+  labs(title = "Courbes lissées avec splines pénalisées (lambda = 0.5)",
+       x = "Date",
+       y = "NO2 AQI Lissé") +
   theme_minimal() +
-  theme(legend.position = "bottom")
+  theme(legend.title = element_text(size = 10), legend.text = element_text(size = 8))
 ```
 
-## Ondelettes 
-
-```{r}
-# Effectuer une analyse en ondelettes
-wavelet_result <- wd(data_pho$NO2.AQI[0:4096], type = "wavelet")
-
-# Restreindre le tracé à la longueur d'origine
-plot(wavelet_result, main = "Wavelet Decomposition", xlim = c(0, 2048))
-```
-
-```{r}
-wavelet_result
-```
-
-
-```{r}
-# Plot the scaling function and wavelet functions
-par(mfrow=c(1,2))
-plot(wavelet_result$C, type="l", main="Représentation des \ncoefficients d'ondelettes")
-plot(wavelet_result$D, type="l", main="Représentation des \ncoefficients d'échelle")
-```
+Ce lissage nous permet donc d'observer la tendance globale du taux de NO2 dans l'air qui semble diminuer au fil du temps. Par ailleurs, on perçoit davantage les variations saisonnières sur ce dernier graphique.
 
 
 # Analyse fonctionnelle
+
+
 
 ```{r}
 data_long <- melt(data_pollution, id.vars=c("City", "Date.Local"), variable.name="Pollutant")
@@ -300,8 +236,8 @@ La courbe obtenue à partir de l'analyse fonctionnelle peut montrer la tendance 
 ```{r}
 mean_smoothed <- all_smoothed %>%
   group_by(date) %>%
-  summarise(mean_smoothed_variable = mean(smoothed_variable),
-            sd_smoothed_variable = sd(smoothed_variable))
+  summarise(mean_smoothed_variable = mean(smoothed_NO2_AQI),
+            sd_smoothed_variable = sd(smoothed_NO2_AQI))
 
 ggplot() +
   geom_ribbon(data = mean_smoothed, aes(x = date, ymin = mean_smoothed_variable - sd_smoothed_variable, ymax = mean_smoothed_variable + sd_smoothed_variable), fill = "blue", alpha = 0.3) +
@@ -312,13 +248,6 @@ ggplot() +
   theme(legend.position = "bottom")
 ```
 
-## Covariance et corrélation
-
-```{r}
-
-```
-
-
 ## Préparation des données de 2015 sans valeurs manquantes pour l'ACP
 
 ```{r}
@@ -328,7 +257,7 @@ all_smoothed$Year <- format(all_smoothed$date, "%Y")
 
 # Créer le nouveau data.frame avec les valeurs de NO2.AQI
 new_df <- all_smoothed %>%
-  pivot_wider(names_from = city, values_from = smoothed_variable)
+  pivot_wider(names_from = city, values_from = smoothed_NO2_AQI)
 
 data_2015 <- new_df[which(new_df$Year == "2015"),]
 data_2015 <- column_to_rownames(data_2015, var = "Day")
@@ -407,18 +336,3 @@ legend("topright", legend = levels(position), col = 1:length(levels(position)), 
 ```
 
 On observe la formation de clusters, notamment en fonction de la position géographique sur la carte des Etats-Unis. Et que la quantité de NO2 dans l'air n'est pas uniquement liée à la saison comme on l'a indiqué précédemment, mais qu'il s'agit également d'un phénomène géographique.
-
-## Représentation de Phoenix pour chaque année
-
-```{r}
-smoothed_data$Year <- format(smoothed_data$Date.Local, "%Y")
-smoothed_data_NY <- smoothed_data[which(smoothed_data$City=="Phoenix"),]
-
-ggplot(smoothed_data_NY, aes(x = as.numeric(format(Date.Local, "%j")), y = smoothed_NO2, group = Year, color = Year)) +
-  geom_line() +
-  labs(title = "Évolution de NO2.AQI à Phoenix (2000-2016)",
-       x = "Jour de l'année",
-       y = "NO2.AQI") +
-  theme_minimal()
-
-```
