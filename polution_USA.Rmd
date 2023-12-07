@@ -311,7 +311,8 @@ df_direction <- data.frame(ville = villes, direction = directions)
 ## ACP fonctionnelle
 
 ```{r}
-Datasmooth = smooth.basis(1:365,data_2015,fdParobj = fdparTemp)
+fdparData = fdPar(splbasis,Lfdobj = 2,lambda=lambda)
+Datasmooth = smooth.basis(1:365,data_2015,fdParobj = fdparData)
 
 DataACPF = pca.fd(Datasmooth$fd,nharm=4,centerfns = TRUE)
 DataACPF$varprop
