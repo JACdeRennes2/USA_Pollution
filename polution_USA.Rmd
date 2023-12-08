@@ -1,22 +1,11 @@
 ---
-title: "La Pollution aux USA"
+title: "La Pollution aux États-Unis"
 author: "Clément PEREON et Jules AVIGNON"
-date: "2023-11-22"
+date: '2023-11-22'
 output:
   html_document:
-    css: xaringan-themer.css
+    df_print: paged
 ---
-
-```{r xaringan-themer, include=FALSE, warning=FALSE}
-library(xaringanthemer)
-style_mono_accent(
-  base_color = "#115c30", 
-  background_color = "#f7fce3",
-  header_font_google = google_font("Josefin Sans"),
-  text_font_google   = google_font("Montserrat", "300", "300i"),
-  code_font_google   = google_font("Fira Mono"))
-```
-
 
 ```{r include=FALSE}
 library(tidyverse)
@@ -222,7 +211,7 @@ Ce lissage nous permet donc d'observer la tendance globale du taux de NO2 dans l
 
 # Analyse fonctionnelle
 
-L'abalyse temporelle peut nous aider à identifier les tendances temporelles significatives dans nos données lissées.
+L'analyse fonctionnelle peut nous aider à identifier les tendances temporelles significatives dans nos données lissées.
 
 ```{r, fig.align='center'}
 data_long <- melt(data_pollution, id.vars=c("City", "Date.Local"), variable.name="Pollutant")
