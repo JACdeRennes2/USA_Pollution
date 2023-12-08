@@ -274,12 +274,16 @@ La bande d'intervalle de confiance reste relativement constante sur la période,
 
 ## Préparation des données de 2015 sans valeurs manquantes pour l'ACP
 
+Pour réaliser une ACP fonctionnelle, nous allons nous baser sur les données de 2015. Étant donné que les données présentent une certaine stabilité temporelle au fil des années, en se concentrant sur une année spécifique (par exemple, 2015), on peut simplifier l'analyse en supposant que les tendances temporelles restent relativement constantes pendant cette période.
+<br>
+Comme notre jeu de données est incomplet (toutes les villes/stations n'ont pas enregistré de données pour toutes les dates), nous avons choisi d'imputer les valeurs manquantes par la moyenne. C'est une méthode d'imputation simple, rapide et adaptée à un jeu de données volumineux car elle n'est pas trop coûteuses en termes de ressources computationnelles.
+<br>
+Malgré une tendance à la baisse du taux de NO2 dans l'air au fil du temps, nous observons une stabilité générale, ce qui peut être considéré comme un facteur atténuant. Cette stabilité temporelle contribue à minimiser le risque de biais important, renforçant ainsi la fiabilité de nos analyses.
+
 ```{r}
-# Extraire le mois et l'année de la colonne Date.Local
 all_smoothed$Day <- format(all_smoothed$date, "%b%d")
 all_smoothed$Year <- format(all_smoothed$date, "%Y")
 
-# Créer le nouveau data.frame avec les valeurs de NO2.AQI
 new_df <- all_smoothed %>%
   pivot_wider(names_from = city, values_from = smoothed_NO2_AQI)
 
@@ -287,8 +291,6 @@ data_2015 <- new_df[which(new_df$Year == "2015"),]
 data_2015 <- column_to_rownames(data_2015, var = "Day")
 data_2015 <- data_2015[, -c(1:2)]
 
-#IMPUTER LES NA PAR LES MOYENNES
-#conversion des variables de data_2015 en numérique
 data_2015 <- data_2015 %>% mutate_all(as.numeric)
 
 data_2015 <- data_2015[, colSums(is.na(data_2015)) != nrow(data_2015)]
@@ -309,19 +311,16 @@ data_2015 <- as.matrix(data_2015)
 ```
 
 ```{r}
-# Créer un dataframe avec les villes
 villes <- c("Boston", "Camden", "Charlotte", "Cleveland", "Dallas", "Houston", 
             "Kansas City", "Long Beach", "Los Angeles", "Louisville", "New York",
             "Oakland", "Oklahoma City", "Phoenix", "Portland", "Salt Lake City", 
             "Seattle", "Tucson", "Victorville", "Washington")
 
-# Associer chaque ville à une direction géographique
 directions <- c("Nord-Est", "Nord-Est", "Sud-Est", "Nord-Est", "Sud",
                 "Sud-Ouest", "Centre", "Sud-Ouest", "Sud-Ouest", "Centre",
                 "Nord-Est", "Sud-Ouest", "Centre", "Sud-Ouest", "Nord-Ouest",
                 "Centre", "Nord-Ouest", "Sud-Ouest", "Sud-Ouest", "Nord-Est")
 
-# Créer un dataframe avec les associations
 df_direction <- data.frame(ville = villes, direction = directions)
 ```
 
